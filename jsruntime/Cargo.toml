@@ -1,0 +1,19 @@
+# Copyright 2018-2022 the Deno authors. All rights reserved. MIT license.
+[package]
+name = "jsruntime"
+version = "0.1.0"
+authors = ["BigBadE"]
+edition = "2021"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/BigBadE/JSRuntime"
+description = "A JavaScript runtime made for a game"
+
+[[bin]]
+name = "deno"
+path = "src/main.rs"
+
+[dependencies]
+runner = { version = "0.1.0", path="../runner" }
+util = { version = "0.1.0", path="../util" }
+anyhow = "1.0"

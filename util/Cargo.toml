@@ -1,0 +1,16 @@
+# Copyright 2018-2022 the Deno authors. All rights reserved. MIT license.
+[package]
+name = "util"
+version = "0.1.0"
+authors = ["BigBadE"]
+edition = "2021"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/BigBadE/JSRuntime"
+description = "Utilities used by other crates"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+anyhow = "1.0"
