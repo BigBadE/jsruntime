@@ -51,8 +51,10 @@ pub struct JsError {
     pub source_line: Option<String>,
     pub script_resource_name: Option<String>,
     pub line_number: Option<i64>,
-    pub start_column: Option<i64>, // 0-based
-    pub end_column: Option<i64>,   // 0-based
+    pub start_column: Option<i64>,
+    // 0-based
+    pub end_column: Option<i64>,
+    // 0-based
     pub frames: Vec<JsStackFrame>,
     pub stack: Option<String>,
 }
@@ -104,11 +106,8 @@ impl JsStackFrame {
     }
 }
 
-fn get_property<'a>(
-    scope: &mut v8::HandleScope<'a>,
-    object: v8::Local<v8::Object>,
-    key: &str,
-) -> Option<v8::Local<'a, v8::Value>> {
+fn get_property<'a>(scope: &mut v8::HandleScope<'a>, object: v8::Local<v8::Object>, key: &str)
+    -> Option<v8::Local<'a, v8::Value>> {
     let key = v8::String::new(scope, key).unwrap();
     object.get(scope, key.into())
 }
@@ -126,18 +125,12 @@ impl JsError {
         js_error.into()
     }
 
-    pub fn from_v8_exception(
-        scope: &mut v8::HandleScope,
-        exception: v8::Local<v8::Value>,
-    ) -> Self {
+    pub fn from_v8_exception(scope: &mut v8::HandleScope, exception: v8::Local<v8::Value>) -> Self {
         Self::inner_from_v8_exception(scope, exception, Default::default())
     }
 
-    fn inner_from_v8_exception<'a>(
-        scope: &'a mut v8::HandleScope,
-        exception: v8::Local<'a, v8::Value>,
-        mut seen: HashSet<v8::Local<'a, v8::Value>>,
-    ) -> Self {
+    fn inner_from_v8_exception<'a>(scope: &'a mut v8::HandleScope, exception: v8::Local<'a, v8::Value>,
+                                   mut seen: HashSet<v8::Local<'a, v8::Value>>) -> Self {
         // Create a new HandleScope because we're creating a lot of new local
         // handles below.
         let scope = &mut v8::HandleScope::new(scope);
@@ -260,4 +253,35 @@ impl Display for JsError {
         }
         Ok(())
     }
+}
+
+/// Implements `value instanceof primordials.Error` in JS. Similar to
+/// `Value::is_native_error()` but more closely matches the semantics
+/// of `instanceof`. `Value::is_native_error()` also checks for static class
+/// inheritance rather than just scanning the prototype chain, which doesn't
+/// work with our WebIDL implementation of `DOMException`.
+pub(crate) fn is_instance_of_error<'s>(
+    scope: &mut v8::HandleScope<'s>,
+    value: v8::Local<v8::Value>,
+) -> bool {
+    if !value.is_object() {
+        return false;
+    }
+    let message = v8::String::empty(scope);
+    let error_prototype = v8::Exception::error(scope, message)
+        .to_object(scope)
+        .unwrap()
+        .get_prototype(scope)
+        .unwrap();
+    let mut maybe_prototype =
+        value.to_object(scope).unwrap().get_prototype(scope);
+    while let Some(prototype) = maybe_prototype {
+        if prototype.strict_equals(error_prototype) {
+            return true;
+        }
+        maybe_prototype = prototype
+            .to_object(scope)
+            .and_then(|o| o.get_prototype(scope));
+    }
+    false
 }
