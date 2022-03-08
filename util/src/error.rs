@@ -233,24 +233,13 @@ fn format_source_loc(
 
 impl Display for JsError {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        if let Some(stack) = &self.stack {
-            let stack_lines = stack.lines();
-            if stack_lines.count() > 1 {
-                return write!(f, "{}", stack);
-            }
-        }
+        let mut output = String::new();
 
-        write!(f, "{}", self.message)?;
-        if let Some(script_resource_name) = &self.script_resource_name {
-            if self.line_number.is_some() && self.start_column.is_some() {
-                let source_loc = format_source_loc(
-                    script_resource_name,
-                    self.line_number.unwrap(),
-                    self.start_column.unwrap(),
-                );
-                write!(f, "\n    at {}", source_loc)?;
-            }
+        output.push_str(&format!("{}", self.message));
+        if self.source_line.is_some() && self.start_column.is_some() && self.end_column.is_some() {
+            output.push_str(&format!("{}", self.message));
         }
+        write!(f, "{}", output)?;
         Ok(())
     }
 }
