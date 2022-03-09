@@ -1,7 +1,5 @@
 use std::fs;
 use runner::runner::JSRunner;
-use util::error::JsError;
-use util::fmt_error::PrettyJsError;
 
 #[test]
 fn run_js_tests() {
@@ -18,5 +16,6 @@ fn run_js_tests() {
             assert!(false)
         }
     }
-    assert!(false)
+
+    JSRunner::shutdown();
 }

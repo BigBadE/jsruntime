@@ -121,10 +121,6 @@ pub(crate) struct NativeJsError {
 }
 
 impl JsError {
-    pub(crate) fn create(js_error: Self) -> Error {
-        js_error.into()
-    }
-
     pub fn from_v8_exception(scope: &mut v8::HandleScope, exception: v8::Local<v8::Value>) -> Self {
         Self::inner_from_v8_exception(scope, exception, Default::default())
     }

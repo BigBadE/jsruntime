@@ -91,6 +91,13 @@ impl JSRunner {
         v8::V8::initialize();
     }
 
+    pub fn shutdown() {
+        unsafe {
+            v8::V8::dispose();
+        }
+        v8::V8::shutdown_platform();
+    }
+
     /// Gets the global context of the current isolate
     fn global_context(&mut self) -> v8::Global<v8::Context> {
         let state = Self::get_state(&mut self.isolate);

@@ -283,7 +283,7 @@ mod tests {
         );
         assert_eq!(
             &actual,
-            "\nconsole.log(\'foo\');\n        \x1B[31m^^^"
+            "\nconsole.log(\'foo\');\n\u{1b}[0m\u{1b}[31m        ^^^\u{1b}[0m"
         );
     }
 }
