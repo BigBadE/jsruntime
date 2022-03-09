@@ -1,7 +1,9 @@
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
 
 use anyhow::Error;
+use v8::{CreateParams, FunctionCallback, FunctionTemplate, MapFnTo};
 
 use util::error::JsError;
 use util::fmt_error::PrettyJsError;
@@ -15,15 +17,11 @@ pub struct JSRunner {
 }
 
 impl JSRunner {
-    pub fn new(platform: Option<v8::SharedRef<v8::Platform>>, heap_min: usize, heap_max: usize) -> Self {
+    pub fn new(platform: Option<v8::SharedRef<v8::Platform>>, params: CreateParams,
+               globals: HashMap<&[u8], impl MapFnTo<FunctionCallback>>) -> Self {
         if !INITIALIZED {
             JSRunner::initialize(platform)
         }
-
-        let params = v8::Isolate::create_params()
-            .array_buffer_allocator(v8::new_default_allocator())
-            .allow_atomics_wait(false)
-            .heap_limits(heap_min, heap_max);
 
         let mut isolate = v8::Isolate::new(params);
 
@@ -31,7 +29,18 @@ impl JSRunner {
 
         {
             let scope = &mut v8::HandleScope::new(&mut isolate);
-            let context = v8::Context::new(scope);
+
+            let template = v8::ObjectTemplate::new(scope);
+
+            for (key, value) in globals {
+                template.set(
+                    v8::Local::<v8::Name>::try_from(
+                        v8::String::new_from_utf8(scope, key, v8::NewStringType::Normal)
+                            .unwrap()).unwrap(),
+                    v8::Local::<v8::Data>::try_from(
+                        FunctionTemplate::new(scope, value)).unwrap());
+            }
+            let context = v8::Context::new_from_template(scope, template);
 
             global_context = v8::Global::new(scope, context)
         }
@@ -91,6 +100,7 @@ impl JSRunner {
         v8::V8::initialize();
     }
 
+    /// Appears to be bugged, SEGMENTATION FAULTs
     pub fn shutdown() {
         unsafe {
             v8::V8::dispose();

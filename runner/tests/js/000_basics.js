@@ -1,3 +1,3 @@
-console.log("1 + 1 = " + (1+1));
+print(500);
 
-//Not code;
+throw 500;

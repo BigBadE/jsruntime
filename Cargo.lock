@@ -86,6 +86,7 @@ name = "runner"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "serde",
  "serde_v8",
  "util",
  "v8",
