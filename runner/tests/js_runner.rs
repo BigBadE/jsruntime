@@ -1,5 +1,7 @@
 use std::fs;
 use runner::runner::JSRunner;
+use util::error::JsError;
+use util::fmt_error::PrettyJsError;
 
 #[test]
 fn run_js_tests() {
@@ -12,8 +14,7 @@ fn run_js_tests() {
         print!("Running {}\n", path.to_str().unwrap());
         let result = runner.run(fs::read_to_string(path).unwrap().as_bytes());
         if result.is_err() {
-            let error = result.err().unwrap();
-            print!("Error: {}\n", error);
+            print!("{}\n", result.err().unwrap());
             assert!(false)
         }
     }

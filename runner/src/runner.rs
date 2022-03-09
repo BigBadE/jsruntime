@@ -4,6 +4,7 @@ use std::rc::Rc;
 use anyhow::Error;
 
 use util::error::JsError;
+use util::fmt_error::PrettyJsError;
 
 use crate::state::JSRunnerState;
 
@@ -57,8 +58,8 @@ impl JSRunner {
             Some(script) => script,
             None => {
                 let exception = try_catch.exception().unwrap();
-                return Result::Err(Error::new(
-                    JsError::from_v8_exception(try_catch, exception)));
+                return Result::Err(
+                    PrettyJsError::create(JsError::from_v8_exception(try_catch, exception)));
             }
         };
 
@@ -66,8 +67,8 @@ impl JSRunner {
             Some(result) => Result::Ok(result),
             None => {
                 let exception = try_catch.exception().unwrap();
-                Result::Err(Error::new(
-                    JsError::from_v8_exception(try_catch, exception)))
+                return Result::Err(PrettyJsError::create(
+                    JsError::from_v8_exception(try_catch, exception)));
             }
         }
     }
