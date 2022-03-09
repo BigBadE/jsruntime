@@ -1,13 +1,8 @@
 extern crate core;
 
-
 use std::collections::HashMap;
-use std::fmt::{Display};
-use std::{fs, io};
-use serde::Deserialize;
-use v8::ValueDeserializer;
+use std::{fs};
 use runner::runner::JSRunner;
-use serde_v8::{Deserializer, Error};
 
 #[test]
 fn run_js_tests() {
