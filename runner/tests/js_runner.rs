@@ -34,10 +34,6 @@ fn run_js_tests() {
     }
 }
 
-fn test(testing: Box<dyn Display>) {
-
-}
-
 fn print<'s>(scope: &mut v8::HandleScope<'s>,
                                            args: v8::FunctionCallbackArguments, _rv: v8::ReturnValue) {
     println!("{}", args.get(0).to_rust_string_lossy(scope));
