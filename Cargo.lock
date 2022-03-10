@@ -49,6 +49,7 @@ dependencies = [
  "anyhow",
  "runner",
  "util",
+ "v8",
 ]
 
 [[package]]
