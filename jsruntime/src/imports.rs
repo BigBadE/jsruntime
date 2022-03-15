@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use crate::provider::Provider;
 
 //All structs providing imports
+
+/*
 static PROVIDERS: Vec<Box<dyn Provider>> = vec!();
 
 pub fn register_imports<'s>(mut global_functions: HashMap<&'s [u8],
@@ -13,4 +15,4 @@ pub fn register_imports<'s>(mut global_functions: HashMap<&'s [u8],
             global_functions.insert(key, value);
         }
     }
-}
+}*/

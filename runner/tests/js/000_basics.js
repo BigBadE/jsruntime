@@ -1,3 +1,3 @@
-print(500);
+print(1 + 2);
 
 throw 500;

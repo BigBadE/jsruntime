@@ -25,7 +25,7 @@ fn run_js_tests() {
             print!("{}\n", result.err().unwrap());
             assert!(false)
         }
-        //assert!(false)
+        assert!(false)
     }
 }
 
