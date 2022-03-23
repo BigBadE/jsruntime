@@ -5,7 +5,7 @@ pub mod imports;
 pub mod provider;
 
 fn main() {
-    let paths = fs::read_dir("./tests/js").unwrap();
+    /*let paths = fs::read_dir("./tests/js").unwrap();
 
     let params = v8::Isolate::create_params()
         .array_buffer_allocator(v8::new_default_allocator())
@@ -13,8 +13,7 @@ fn main() {
         .heap_limits(0, 3 * 1024 * 1024);
 
     let globals = HashMap::new();
-    
-    imports.
+
     let mut runner = JSRunner::new(Option::None, params, imports.get_HashMap::from([
         ("print".as_bytes(), print)
     ]));
@@ -28,5 +27,5 @@ fn main() {
             assert!(false)
         }
         //assert!(false)
-    }
+    }*/
 }
