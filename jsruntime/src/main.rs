@@ -1,35 +1,44 @@
 use std::collections::HashMap;
-use std::{fs, io};
+use std::{fs, io, thread};
+use std::borrow::{Borrow, BorrowMut};
 use std::io::Read;
 use std::path::Path;
-use std::thread::Thread;
+use std::sync::{Arc, RwLock};
+use std::thread::{JoinHandle};
+use std::time::{Duration, SystemTime};
 use runner::runner::JSRunner;
 
 pub mod imports;
 pub mod provider;
 
-
 fn main() {
-    let mut processes: HashMap<&str, Thread> = HashMap::new();
-
     let mut args = Vec::new();
+    let processes: Arc<RwLock<HashMap<String, JoinHandle<()>>>> =
+        Arc::new(RwLock::new(HashMap::new()));
+
     loop {
         io::stdin().read_to_end(&mut args).unwrap();
         let output = String::from_utf8_lossy(&args).into_owned();
-        let split: Vec<&str> = output.split('\u{0000}').collect();
-        if split.len() == 1 {
-            match processes.get(split[0]) {
-                Some(value) => {
-
-                }
-                None => {
-                    run(&String::from(split[0]), Option::None,
-                        vec![]);
-                }
+        let mut map = processes.write().unwrap();
+        if !output.contains('\u{0000}') {
+            if !map.contains_key(output.as_str()) {
+                map.insert(
+                    output.clone(),
+                    thread::spawn(move || {
+                        run(&output,
+                            Option::None, vec![])
+                    }));
+                continue;
             }
+            map.remove(output.as_str());
         } else {
-            run(&String::from(split[0]), Option::Some(&String::from(split[1])),
-                split[2].split(",").collect());
+            map.insert(
+                String::from(output.split('\u{0000}').next().unwrap()),
+                thread::spawn(move || {
+                    let split: Vec<&str> = output.split('\u{0000}').collect();
+                    run(&String::from(split[0]), Option::Some(&String::from(split[1])),
+                        split[2].split(",").collect())
+                }));
         }
     }
 }
