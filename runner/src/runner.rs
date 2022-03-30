@@ -8,6 +8,8 @@ use v8::{CreateParams, FunctionCallback, FunctionTemplate, MapFnTo};
 use util::error::JsError;
 use util::fmt_error::PrettyJsError;
 
+use shared_memory::Shmem;
+
 use crate::state::JSRunnerState;
 
 static INITIALIZED: bool = false;
@@ -18,7 +20,7 @@ pub struct JSRunner {
 
 impl JSRunner {
     pub fn new(platform: Option<v8::SharedRef<v8::Platform>>, params: CreateParams,
-               globals: HashMap<&[u8], impl MapFnTo<FunctionCallback>>) -> Self {
+               globals: HashMap<&[u8], impl MapFnTo<FunctionCallback>>, shared_memory: Shmem) -> Self {
         if !INITIALIZED {
             JSRunner::initialize(platform)
         }
@@ -45,7 +47,8 @@ impl JSRunner {
         }
 
         isolate.set_slot(Rc::new(RefCell::new(JSRunnerState {
-            global_context
+            global_context,
+            shared_memory
         })));
 
         return JSRunner {
