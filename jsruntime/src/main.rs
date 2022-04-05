@@ -5,6 +5,7 @@ use std::path::Path;
 use std::sync::{Arc, RwLock};
 use std::thread::{JoinHandle};
 use runner::runner::JSRunner;
+use crate::imports::register_imports;
 
 pub mod imports;
 pub mod provider;
@@ -50,6 +51,8 @@ fn run(path: &String, memory_map: Option<&String>, modules: Vec<&str>) {
     let globals: HashMap<&[u8],
         &dyn Fn(&mut v8::HandleScope<'_>, v8::FunctionCallbackArguments<'_>, v8::ReturnValue<'_>)> =
         HashMap::new();
+
+    register_imports(&globals);
 
     let mut runner = JSRunner::new(
         Option::None, params, globals);
