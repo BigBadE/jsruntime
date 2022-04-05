@@ -35,14 +35,21 @@ impl JSRunner {
 
             let global = context.global(scope);
 
-            for provider in providers {
-                for (name, function) in provider.globals {
-                    let object = Object::new(scope);
+            let context_scope = &mut v8::ContextScope::new(scope, context);
 
-                    global.set(scope, v8::String::new(scope, name), object);
+            for provider in providers {
+                let object = Object::new(context_scope);
+                for (name, function) in provider.globals {
+                    object.set(context_scope,
+                               v8::String::new(context_scope, name).unwrap().into(),
+                    v8::FunctionTemplate::new(context_scope, function)
+                                   .get_function(context_scope).unwrap().into());
                 }
+                global.set(context_scope,
+                           v8::String::new(context_scope, provider.name).unwrap().into(),
+                           object.into());
             }
-            global_context = v8::Global::new(scope, context)
+            global_context = v8::Global::new(context_scope, context)
         }
 
         isolate.set_slot(Rc::new(RefCell::new(JSRunnerState {
