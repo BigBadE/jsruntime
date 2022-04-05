@@ -6,10 +6,9 @@ use std::sync::{Arc, RwLock};
 use std::thread::{JoinHandle};
 use shared_memory::{ShmemConf};
 use runner::runner::JSRunner;
-use crate::imports::register_imports;
+use crate::imports::{providers, register_imports};
 
 pub mod imports;
-pub mod provider;
 
 fn main() {
     let mut args = Vec::new();
@@ -49,11 +48,7 @@ fn run(path: &String, memory_map: Option<String>, _modules: Vec<&str>) {
         .allow_atomics_wait(false)
         .heap_limits(0, 3 * 1024 * 1024);
 
-    let mut globals: HashMap<&[u8],
-        &dyn Fn(&mut v8::HandleScope<'_>, v8::FunctionCallbackArguments, v8::ReturnValue)> =
-        HashMap::new();
-
-    register_imports(&mut globals);
+    let providers = providers();
 
     let memory;
 
@@ -62,7 +57,7 @@ fn run(path: &String, memory_map: Option<String>, _modules: Vec<&str>) {
         None => memory = Option::None
     }
     let mut runner = JSRunner::new(
-        Option::None, params, globals, memory);
+        Option::None, params, providers, memory);
 
     let _result = runner.run(fs::read_to_string(Path::new(
         path)).unwrap().as_bytes());

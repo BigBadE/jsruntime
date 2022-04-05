@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use anyhow::Error;
-use v8::{CreateParams, FunctionCallback, FunctionTemplate, MapFnTo};
+use v8::{CreateParams, FunctionCallback, FunctionTemplate, Local, MapFnTo, Object};
 
 use util::error::JsError;
 use util::fmt_error::PrettyJsError;
@@ -20,7 +20,7 @@ pub struct JSRunner {
 
 impl JSRunner {
     pub fn new(platform: Option<v8::SharedRef<v8::Platform>>, params: CreateParams,
-               globals: HashMap<&[u8], impl MapFnTo<FunctionCallback>>, shared_memory: Option<Shmem>) -> Self {
+               providers: Vec<Provider>, shared_memory: Option<Shmem>) -> Self {
         if !INITIALIZED {
             JSRunner::initialize(platform)
         }
@@ -31,18 +31,17 @@ impl JSRunner {
         {
             let scope = &mut v8::HandleScope::new(&mut isolate);
 
-            let template = v8::ObjectTemplate::new(scope);
+            let context = v8::Context::new(scope);
 
-            for (key, value) in globals {
-                template.set(
-                    v8::Local::<v8::Name>::try_from(
-                        v8::String::new_from_utf8(scope, key, v8::NewStringType::Normal)
-                            .unwrap()).unwrap(),
-                    v8::Local::<v8::Data>::try_from(
-                        FunctionTemplate::new(scope, value)).unwrap());
+            let global = context.global(scope);
+
+            for provider in providers {
+                for (name, function) in provider.globals {
+                    let object = Object::new(scope);
+
+                    global.set(scope, v8::String::new(scope, name), object);
+                }
             }
-            let context = v8::Context::new_from_template(scope, template);
-
             global_context = v8::Global::new(scope, context)
         }
 
