@@ -1,11 +1,9 @@
 use std::collections::HashMap;
 use std::{fs, io, thread};
-use std::borrow::{Borrow, BorrowMut};
 use std::io::Read;
 use std::path::Path;
 use std::sync::{Arc, RwLock};
 use std::thread::{JoinHandle};
-use std::time::{Duration, SystemTime};
 use runner::runner::JSRunner;
 
 pub mod imports;
@@ -43,7 +41,7 @@ fn main() {
     }
 }
 
-fn run(path: &String, memoryMap: Option<&String>, modules: Vec<&str>) {
+fn run(path: &String, memory_map: Option<&String>, modules: Vec<&str>) {
     let params = v8::Isolate::create_params()
         .array_buffer_allocator(v8::new_default_allocator())
         .allow_atomics_wait(false)

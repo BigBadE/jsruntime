@@ -14,7 +14,7 @@ path = "src/lib.rs"
 
 [dependencies]
 util = { version = "0.1.0", path="../util" }
-serde_v8 = { version = "0.31.0", path = "../serde_v8" }
-serde = { version = "1.0.130", features = ["derive"] }
-v8 = "0.40.2"
+serde_v8 = "0.38.0"
+serde = { version = "1.0.129", features = ["derive"] }
+v8 = "0.41.0"
 anyhow = "1.0"

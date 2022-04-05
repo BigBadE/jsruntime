@@ -85,9 +85,9 @@ impl JSRunner {
     fn initialize(platform: Option<v8::SharedRef<v8::Platform>>) {
         // Include 10MB ICU data file.
         #[repr(C, align(16))]
-        struct IcuData([u8; 10144432]);
+        struct IcuData([u8; 10284336]);
         static ICU_DATA: IcuData = IcuData(*include_bytes!("../icudtl.dat"));
-        v8::icu::set_common_data_69(&ICU_DATA.0).unwrap();
+        v8::icu::set_common_data_70(&ICU_DATA.0).unwrap();
 
         match platform {
             None => v8::V8::initialize_platform(
@@ -104,7 +104,7 @@ impl JSRunner {
         unsafe {
             v8::V8::dispose();
         }
-        v8::V8::shutdown_platform();
+        v8::V8::dispose_platform();
     }
 
     /// Gets the global context of the current isolate
