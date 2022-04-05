@@ -4,6 +4,7 @@ use std::io::Read;
 use std::path::Path;
 use std::sync::{Arc, RwLock};
 use std::thread::{JoinHandle};
+use shared_memory::{ShmemConf};
 use runner::runner::JSRunner;
 use crate::imports::register_imports;
 
@@ -35,27 +36,33 @@ fn main() {
                 String::from(output.split('\u{0000}').next().unwrap()),
                 thread::spawn(move || {
                     let split: Vec<&str> = output.split('\u{0000}').collect();
-                    run(&String::from(split[0]), Option::Some(&String::from(split[1])),
+                    run(&String::from(split[0]), Option::Some(String::from(split[1])),
                         split[2].split(",").collect())
                 }));
         }
     }
 }
 
-fn run(path: &String, memory_map: Option<&String>, modules: Vec<&str>) {
+fn run(path: &String, memory_map: Option<String>, _modules: Vec<&str>) {
     let params = v8::Isolate::create_params()
         .array_buffer_allocator(v8::new_default_allocator())
         .allow_atomics_wait(false)
         .heap_limits(0, 3 * 1024 * 1024);
 
-    let globals: HashMap<&[u8],
-        &dyn Fn(&mut v8::HandleScope<'_>, v8::FunctionCallbackArguments<'_>, v8::ReturnValue<'_>)> =
+    let mut globals: HashMap<&[u8],
+        &dyn Fn(&mut v8::HandleScope<'_>, v8::FunctionCallbackArguments, v8::ReturnValue)> =
         HashMap::new();
 
-    register_imports(&globals);
+    register_imports(&mut globals);
 
+    let memory;
+
+    match memory_map {
+        Some(path) => memory = Option::Some(ShmemConf::new().os_id(&path).create().unwrap()),
+        None => memory = Option::None
+    }
     let mut runner = JSRunner::new(
-        Option::None, params, globals);
+        Option::None, params, globals, memory);
 
     let _result = runner.run(fs::read_to_string(Path::new(
         path)).unwrap().as_bytes());

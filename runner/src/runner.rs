@@ -20,7 +20,7 @@ pub struct JSRunner {
 
 impl JSRunner {
     pub fn new(platform: Option<v8::SharedRef<v8::Platform>>, params: CreateParams,
-               globals: HashMap<&[u8], impl MapFnTo<FunctionCallback>>, shared_memory: Shmem) -> Self {
+               globals: HashMap<&[u8], impl MapFnTo<FunctionCallback>>, shared_memory: Option<Shmem>) -> Self {
         if !INITIALIZED {
             JSRunner::initialize(platform)
         }

@@ -17,4 +17,3 @@ anyhow = "1.0"
 serde_v8 = "0.38.0"
 serde = { version = "1.0.130", features = ["derive"] }
 v8 = "0.41.0"
-termcolor = "1.1.2"

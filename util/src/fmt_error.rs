@@ -1,7 +1,3 @@
-use crate::colors::cyan;
-use crate::colors::italic_bold;
-use crate::colors::red;
-use crate::colors::yellow;
 use std::error::Error;
 use std::fmt;
 use std::ops::Deref;
@@ -12,38 +8,29 @@ const SOURCE_ABBREV_THRESHOLD: usize = 150;
 
 // Keep in sync with `/util/error.js`.
 pub fn format_location(frame: &JsStackFrame) -> String {
-    let _internal = frame
-        .file_name
-        .as_ref()
-        .map_or(false, |f| f.starts_with("deno:"));
     if frame.is_native {
-        return cyan("native").to_string();
+        return "<cyan>native</cyan>".to_string();
     }
     let mut result = String::new();
     if let Some(file_name) = &frame.file_name {
-        result += &cyan(&file_name).to_string();
+        result += &format!("<cyan>{}</cyan>", &file_name);
     } else {
         if frame.is_eval {
             result +=
-                &(cyan(&frame.eval_origin.as_ref().unwrap()).to_string() + ", ");
+                &format!("<cyan>{}</cyan>, ", &frame.eval_origin.as_ref().unwrap());
         }
-        result += &cyan("<anonymous>").to_string();
+        result += &"<cyan><anonymous></cyan>".to_string();
     }
     if let Some(line_number) = frame.line_number {
-        result += &format!("{}{}", ":", yellow(&line_number.to_string()));
+        result += &format!(":<yellow>{}</yellow>", &line_number);
         if let Some(column_number) = frame.column_number {
-            result += &format!("{}{}", ":", yellow(&column_number.to_string()));
+            result += &format!(":<yellow>{}</yellow>", &column_number);
         }
     }
     result
 }
 
-// Keep in sync with `runtime/js/40_error_stack.js`.
 fn format_frame(frame: &JsStackFrame) -> String {
-    let _internal = frame
-        .file_name
-        .as_ref()
-        .map_or(false, |f| f.starts_with("deno:"));
     let is_method_call =
         !(frame.is_top_level.unwrap_or_default() || frame.is_constructor);
     let mut result = String::new();
@@ -51,10 +38,10 @@ fn format_frame(frame: &JsStackFrame) -> String {
         result += "async ";
     }
     if frame.is_promise_all {
-        result += &italic_bold(&format!(
-            "Promise.all (index {})",
+        result += &format!(
+            "<italic><bold>Promise.all (index {})</bold></italic>",
             frame.promise_index.unwrap_or_default()
-        ))
+        )
             .to_string();
         return result;
     }
@@ -82,16 +69,16 @@ fn format_frame(frame: &JsStackFrame) -> String {
                 formatted_method += "<anonymous>";
             }
         }
-        result += &italic_bold(&formatted_method).to_string();
+        result += &format!("<italic><bold>{}</bold></italic>", &formatted_method);
     } else if frame.is_constructor {
         result += "new ";
         if let Some(function_name) = &frame.function_name {
-            result += &italic_bold(&function_name).to_string();
+            result += &format!("<italic><bold>{}</bold></italic>", &function_name);
         } else {
-            result += &cyan("<anonymous>").to_string();
+            result += &"<cyan><anonymous></cyan>".to_string();
         }
     } else if let Some(function_name) = &frame.function_name {
-        result += &italic_bold(&function_name).to_string();
+        result += &format!("<italic><bold>{}</bold></italic>", &function_name).to_string();
     } else {
         result += &format_location(frame);
         return result;
@@ -171,8 +158,8 @@ fn format_maybe_source_line(
 
     if start_column as usize >= source_line.len() {
         return format!(
-            "\n{} Couldn't format source line: Column {} is out of bounds (source may have changed at runtime)",
-            crate::colors::yellow("Warning"), start_column + 1,
+            "\n<yellow>Warning</yellow> Couldn't format source line: Column {} is out of bounds (source may have changed at runtime)",
+            start_column + 1,
         );
     }
 
@@ -187,9 +174,9 @@ fn format_maybe_source_line(
         s.push('^');
     }
     let color_underline = if is_error {
-        red(&s).to_string()
+        format!("<red>{}</red>", &s)
     } else {
-        cyan(&s).to_string()
+        format!("<cyan>{}</cyan>", &s)
     };
 
     let indent = format!("{:indent$}", "", indent = level);
