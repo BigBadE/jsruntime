@@ -1,15 +1,11 @@
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::rc::Rc;
-
 use anyhow::Error;
-use v8::{CreateParams, FunctionCallback, FunctionTemplate, Local, MapFnTo, Object};
-
+use v8::{CreateParams, Object};
 use util::error::JsError;
 use util::fmt_error::PrettyJsError;
-
 use shared_memory::Shmem;
-
+use crate::imports::Provider;
 use crate::state::JSRunnerState;
 
 static INITIALIZED: bool = false;
@@ -39,15 +35,15 @@ impl JSRunner {
 
             for provider in providers {
                 let object = Object::new(context_scope);
-                for (name, function) in provider.globals {
-                    object.set(context_scope,
-                               v8::String::new(context_scope, name).unwrap().into(),
-                    v8::FunctionTemplate::new(context_scope, function)
-                                   .get_function(context_scope).unwrap().into());
+                for (name, functions) in provider.globals {
+                    let global_key = v8::String::new(context_scope, provider.name.as_str()).unwrap().into();
+
+                    for function in functions {
+                        set_func(context_scope, object, name.as_str(), function)
+                    }
+                    global.set(context_scope, global_key,
+                               object.into());
                 }
-                global.set(context_scope,
-                           v8::String::new(context_scope, provider.name).unwrap().into(),
-                           object.into());
             }
             global_context = v8::Global::new(context_scope, context)
         }
@@ -134,4 +130,17 @@ impl JSRunner {
         let context = self.global_context();
         v8::HandleScope::with_context(&mut self.isolate, context)
     }
+}
+
+pub fn set_func(
+    scope: &mut v8::HandleScope<'_>,
+    obj: v8::Local<v8::Object>,
+    name: &str,
+    callback: impl v8::MapFnTo<v8::FunctionCallback>,
+) {
+    let key = v8::String::new(scope, name).unwrap();
+    let tmpl = v8::FunctionTemplate::new(scope, callback);
+    let val = tmpl.get_function(scope).unwrap();
+    val.set_name(key);
+    obj.set(scope, key.into(), val.into());
 }

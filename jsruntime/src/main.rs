@@ -3,12 +3,10 @@ use std::{fs, io, thread};
 use std::io::Read;
 use std::path::Path;
 use std::sync::{Arc, RwLock};
-use std::thread::{JoinHandle};
-use shared_memory::{ShmemConf};
+use std::thread::JoinHandle;
+use shared_memory::ShmemConf;
 use runner::runner::JSRunner;
-use crate::imports::{providers, register_imports};
-
-pub mod imports;
+use runner::imports::{providers};
 
 fn main() {
     let mut args = Vec::new();
