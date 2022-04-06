@@ -88,6 +88,7 @@ name = "machine"
 version = "0.1.0"
 dependencies = [
  "runner",
+ "v8",
 ]
 
 [[package]]
