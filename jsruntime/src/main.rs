@@ -6,7 +6,7 @@ use std::sync::{Arc, RwLock};
 use std::thread::JoinHandle;
 use shared_memory::ShmemConf;
 use runner::runner::JSRunner;
-use runner::imports::{providers};
+use runner::imports::{Provider, providers};
 
 fn main() {
     let mut args = Vec::new();
@@ -38,6 +38,11 @@ fn main() {
                 }));
         }
     }
+}
+
+pub fn providers() -> Vec<Provider> {
+    //All structs providing imports
+    vec!([global_provider()])
 }
 
 fn run(path: &String, memory_map: Option<String>, _modules: Vec<&str>) {

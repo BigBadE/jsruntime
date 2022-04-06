@@ -1,18 +1,15 @@
 [package]
-name = "util"
+name = "machine"
 version = "0.1.0"
 authors = ["BigBadE"]
 edition = "2021"
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/BigBadE/JSRuntime"
-description = "Utilities used by other crates"
+description = "Machine module for JS methods"
 
 [lib]
 path = "src/lib.rs"
 
 [dependencies]
-anyhow = "1.0"
-serde_v8 = "0.38.0"
-serde = { version = "1.0.130", features = ["derive"] }
-v8 = "0.41.0"
+runner = { version = "0.1.0", path="../../runner" }

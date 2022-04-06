@@ -34,15 +34,23 @@ impl JSRunner {
             let context_scope = &mut v8::ContextScope::new(scope, context);
 
             for provider in providers {
-                let object = Object::new(context_scope);
-                for (name, functions) in provider.globals {
-                    let global_key = v8::String::new(context_scope, provider.name.as_str()).unwrap().into();
+                for (name, functions) in provider.objects {
+                    let global_key =
+                        v8::String::new(context_scope, provider.name).unwrap().into();
+
+                    let object: v8::Local<Object> = match global.get(context_scope, global_key) {
+                        Some(found) => found.try_into().unwrap(),
+                        None => Object::new(context_scope)
+                    };
 
                     for function in functions {
-                        set_func(context_scope, object, name.as_str(), function);
+                        set_func(context_scope, object, name, function);
                     }
                     global.set(context_scope, global_key,
                                object.into());
+                }
+                for (name, function) in provider.functions {
+                    set_func(context_scope, global, name, function)
                 }
             }
             global_context = v8::Global::new(context_scope, context)
