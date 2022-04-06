@@ -1,12 +1,11 @@
 use std::collections::HashMap;
 
-pub struct Provider<'s> {
+pub struct Provider {
     pub name: String,
-    pub globals: HashMap<String, Vec<&'s dyn Fn(&mut v8::HandleScope<'s>,
-        v8::FunctionCallbackArguments, v8::ReturnValue)>>
+    pub globals: HashMap<String, Vec<v8::FunctionCallback>>
 }
 
-pub fn providers<'s>() -> Vec<Provider<'s>> {
+pub fn providers() -> Vec<Provider> {
     //All structs providing imports
     vec!()
 }

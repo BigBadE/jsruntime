@@ -39,7 +39,7 @@ impl JSRunner {
                     let global_key = v8::String::new(context_scope, provider.name.as_str()).unwrap().into();
 
                     for function in functions {
-                        set_func(context_scope, object, name.as_str(), function)
+                        set_func(context_scope, object, name.as_str(), function);
                     }
                     global.set(context_scope, global_key,
                                object.into());
@@ -136,11 +136,10 @@ pub fn set_func(
     scope: &mut v8::HandleScope<'_>,
     obj: v8::Local<v8::Object>,
     name: &str,
-    callback: impl v8::MapFnTo<v8::FunctionCallback>,
+    callback: v8::FunctionCallback,
 ) {
     let key = v8::String::new(scope, name).unwrap();
-    let tmpl = v8::FunctionTemplate::new(scope, callback);
-    let val = tmpl.get_function(scope).unwrap();
+    let val = v8::Function::builder_raw(callback).build(scope).unwrap();
     val.set_name(key);
     obj.set(scope, key.into(), val.into());
 }
