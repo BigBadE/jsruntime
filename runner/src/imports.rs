@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 pub struct Provider {
-    pub name: &'static str,
-    pub functions: HashMap<&'static str, v8::FunctionCallback>,
-    pub objects: HashMap<&'static str, Vec<v8::FunctionCallback>>
+    pub module: Option<&'static str>,
+    pub functions: Option<HashMap<&'static str, v8::FunctionCallback>>,
+    pub objects: Option<HashMap<&'static str, HashMap<&'static str, v8::FunctionCallback>>>,
 }

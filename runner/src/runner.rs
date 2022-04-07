@@ -34,23 +34,33 @@ impl JSRunner {
             let context_scope = &mut v8::ContextScope::new(scope, context);
 
             for provider in providers {
-                for (name, functions) in provider.objects {
-                    let global_key =
-                        v8::String::new(context_scope, provider.name).unwrap().into();
+                match provider.objects {
+                    Some(objects) => {
+                        for (name, functions) in objects {
+                            let global_key =
+                                v8::String::new(context_scope, name).unwrap().into();
 
-                    let object: v8::Local<Object> = match global.get(context_scope, global_key) {
-                        Some(found) => found.try_into().unwrap(),
-                        None => Object::new(context_scope)
-                    };
+                            let object: v8::Local<Object> = match global.get(context_scope, global_key) {
+                                Some(found) => found.try_into().unwrap(),
+                                None => Object::new(context_scope)
+                            };
 
-                    for function in functions {
-                        set_func(context_scope, object, name, function);
+                            for (func_name, function) in functions {
+                                set_func(context_scope, object, func_name, function);
+                            }
+                            global.set(context_scope, global_key,
+                                       object.into());
+                        }
                     }
-                    global.set(context_scope, global_key,
-                               object.into());
+                    _ => {}
                 }
-                for (name, function) in provider.functions {
-                    set_func(context_scope, global, name, function)
+                match provider.functions {
+                    Some(functions) => {
+                        for (name, function) in functions {
+                            set_func(context_scope, global, name, function)
+                        }
+                    }
+                    _ => {}
                 }
             }
             global_context = v8::Global::new(context_scope, context)
@@ -68,30 +78,7 @@ impl JSRunner {
 
     /// Runs the given script on the current isolate
     pub fn run(&mut self, source: &[u8]) -> Result<v8::Local<v8::Value>, Error> {
-        let mut handle_scope = &mut self.handle_scope();
-
-        let source = v8::String::new_from_utf8(&mut handle_scope, source,
-                                               v8::NewStringType::Normal).unwrap();
-
-        let try_catch = &mut v8::TryCatch::new(handle_scope);
-
-        let script = match v8::Script::compile(try_catch, source, Option::None) {
-            Some(script) => script,
-            None => {
-                let exception = try_catch.exception().unwrap();
-                return Result::Err(
-                    PrettyJsError::create(JsError::from_v8_exception(try_catch, exception)));
-            }
-        };
-
-        match script.run(try_catch) {
-            Some(result) => Result::Ok(result),
-            None => {
-                let exception = try_catch.exception().unwrap();
-                return Result::Err(PrettyJsError::create(
-                    JsError::from_v8_exception(try_catch, exception)));
-            }
-        }
+        return JSRunner::run_with_scope(&mut self.handle_scope(), source);
     }
 
     /// Initializes V8 engine
@@ -137,6 +124,32 @@ impl JSRunner {
     pub fn handle_scope(&mut self) -> v8::HandleScope {
         let context = self.global_context();
         v8::HandleScope::with_context(&mut self.isolate, context)
+    }
+
+    /// Runs the given script on the current isolate
+    pub fn run_with_scope(handle_scope: &mut v8::HandleScope, source: &[u8]) -> Result<v8::Local<v8::Value>, Error> {
+        let source = v8::String::new_from_utf8(handle_scope, source,
+                                               v8::NewStringType::Normal).unwrap();
+
+        let try_catch = &mut v8::TryCatch::new(handle_scope);
+
+        let script = match v8::Script::compile(try_catch, source, Option::None) {
+            Some(script) => script,
+            None => {
+                let exception = try_catch.exception().unwrap();
+                return Result::Err(
+                    PrettyJsError::create(JsError::from_v8_exception(try_catch, exception)));
+            }
+        };
+
+        match script.run(try_catch) {
+            Some(result) => Result::Ok(result),
+            None => {
+                let exception = try_catch.exception().unwrap();
+                return Result::Err(PrettyJsError::create(
+                    JsError::from_v8_exception(try_catch, exception)));
+            }
+        }
     }
 }
 

@@ -46,14 +46,25 @@ pub fn providers() -> Vec<Provider> {
     vec!(global_provider())
 }
 
-fn run(path: &String, memory_map: Option<String>, _modules: Vec<&str>) {
+fn run(path: &String, memory_map: Option<String>, modules: Vec<&str>) {
     let params = v8::Isolate::create_params()
         .array_buffer_allocator(v8::new_default_allocator())
         .allow_atomics_wait(false)
         .heap_limits(0, 3 * 1024 * 1024);
 
-    let providers = providers();
-
+    let mut providers = vec!();
+    
+    for provider in providers {
+        match provider.module { 
+            Some(module) => {
+                if modules.contains(&module) {
+                    providers.push(provider);
+                }
+            }
+            _ => providers.push(provider)
+        }
+    }
+    
     let memory;
 
     match memory_map {

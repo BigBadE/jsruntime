@@ -5,9 +5,9 @@ const TARGETS: [&str; 1] = ["file"];
 
 pub fn global_provider() -> Provider {
     Provider {
-        name: "core",
-        functions: HashMap::from([("$", v8::MapFnTo::map_fn_to(run_cmd))]),
-        objects: HashMap::new(),
+        module: Option::None,
+        functions: Option::Some(HashMap::from([("$", v8::MapFnTo::map_fn_to(run_cmd))])),
+        objects: Option::None,
     }
 }
 
@@ -67,7 +67,7 @@ fn run_cmd<'s>(scope: &mut v8::HandleScope<'s>,
     }
 
     let message = v8::String::new(context_scope, "No method found".as_ref()).unwrap();
-    let exception = v8::Exception::type_error(context_scope, message);
+    let exception = v8::Exception::error(context_scope, message);
     context_scope.throw_exception(exception);
 }
 
