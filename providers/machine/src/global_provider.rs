@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use v8::MapFnTo;
 use runner::imports::Provider;
 
 const TARGETS: [&str; 1] = ["file"];
@@ -7,23 +6,27 @@ const TARGETS: [&str; 1] = ["file"];
 pub fn global_provider() -> Provider {
     Provider {
         name: "core",
-        functions: HashMap::from([("$", run_cmd.map_fn_to())]),
-        objects: HashMap::new()
+        functions: HashMap::from([("$", v8::MapFnTo::map_fn_to(run_cmd))]),
+        objects: HashMap::new(),
     }
 }
 
 fn run_cmd<'s>(scope: &mut v8::HandleScope<'s>,
-             args: v8::FunctionCallbackArguments, mut rv: v8::ReturnValue) {
-    if args.length() == 0 {
+               args: v8::FunctionCallbackArguments, mut rv: v8::ReturnValue) {
+    if args.length() != 1 {
         return;
     }
 
     let command = args.get(0).to_rust_string_lossy(scope);
 
-    let mut command_args = vec![];
+    let mut command_args = Vec::new();
 
-    for i in 1..args.length() {
-        command_args.push(args.get(i));
+    let mut current = command.as_str();
+
+    while current.len() != 0 {
+        let index = consume_arg(current);
+        command_args.push(v8::String::new(scope, &current[0..index]).unwrap().into());
+        current = &current[index+1..];
     }
 
     let context = v8::Context::new(scope);
@@ -59,9 +62,7 @@ fn run_cmd<'s>(scope: &mut v8::HandleScope<'s>,
                 }
                 return;
             }
-            None => {
-
-            }
+            None => {}
         }
     }
 
@@ -77,5 +78,37 @@ fn call_function(scope: &mut v8::HandleScope, function: v8::Local<v8::Function>,
             rv.set(value);
         }
         None => {}
+    }
+}
+
+fn consume_arg(command: &str) -> usize {
+    let mut quoted = false;
+    let mut escaped = false;
+    let mut i = 0;
+    for char in command.chars() {
+        if escaped {
+            escaped = false;
+        } else if char == '\\' {
+            escaped = true;
+        } else if char == '"' {
+            quoted = !quoted;
+        } else if char == ' ' && !quoted {
+            break;
+        }
+        i += 1;
+    }
+    return i;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_arg_consumer() {
+        let test_case = "\"one two\"three\"four five\" six";
+        let index = consume_arg(test_case);
+        assert_eq!(&test_case[0..index], "\"one two\"three\"four five\"");
+        assert_eq!(&test_case[index+1..], "six");
     }
 }
