@@ -16,7 +16,7 @@ pub fn command_provider() -> Provider {
 }
 
 fn run_cmd<'s>(scope: &mut v8::HandleScope<'s>,
-               args: v8::FunctionCallbackArguments, _rv: v8::ReturnValue) {
+                      args: v8::FunctionCallbackArguments, _rv: v8::ReturnValue) {
     let context = v8::Context::new(scope);
     let context_scope = &mut v8::ContextScope::new(scope, context);
 
@@ -28,28 +28,34 @@ fn run_cmd<'s>(scope: &mut v8::HandleScope<'s>,
 
     let state = scope.get_slot::<Rc<RefCell<JSRunnerState>>>().unwrap();
     let state = RefCell::borrow(&state);
-    state.modules.get("Command")
 
-    let source = v8::String::new_from_utf8(scope, source,
-                                           v8::NewStringType::Normal).unwrap();
+    unsafe {
+        let offset = state.modules.get("Command").unwrap().0;
 
-    let try_catch = &mut v8::TryCatch::new(scope);
+        let size = state.shared_memory.unwrap().as_slice()[offset] as usize;
 
-    let script = match v8::Script::compile(try_catch, source, Option::None) {
-        Some(script) => script,
-        None => {
-            let exception = try_catch.exception().unwrap();
-            return Result::Err(
-                PrettyJsError::create(JsError::from_v8_exception(try_catch, exception)));
-        }
-    };
+        let source = v8::String::new_from_utf8(scope,
+                                               &state.shared_memory.unwrap().as_slice()[offset + 1..size],
+                                               v8::NewStringType::Normal).unwrap();
 
-    match script.run(try_catch) {
-        Some(result) => Result::Ok(result),
-        None => {
-            let exception = try_catch.exception().unwrap();
-            return Result::Err(PrettyJsError::create(
-                JsError::from_v8_exception(try_catch, exception)));
+        let try_catch = &mut v8::TryCatch::new(scope);
+
+        let script = match v8::Script::compile(try_catch, source, Option::None) {
+            Some(script) => script,
+            None => {
+                let exception = try_catch.exception().unwrap();
+                return Result::Err(
+                    PrettyJsError::create(JsError::from_v8_exception(try_catch, exception)));
+            }
+        };
+
+        match script.run(try_catch) {
+            Some(result) => Result::Ok(result),
+            None => {
+                let exception = try_catch.exception().unwrap();
+                return Result::Err(PrettyJsError::create(
+                    JsError::from_v8_exception(try_catch, exception)));
+            }
         }
     }
 }
