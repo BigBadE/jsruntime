@@ -1,6 +1,9 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
+use std::rc::Rc;
 use runner::imports::Provider;
 use runner::runner::JSRunner;
+use runner::state::JSRunnerState;
 
 pub fn command_provider() -> Provider {
     Provider {
@@ -8,14 +11,13 @@ pub fn command_provider() -> Provider {
         functions: Option::None,
         objects: Option::Some(HashMap::from([("system", HashMap::from(
             [("run_commands", v8::MapFnTo::map_fn_to(run_cmd))]
-        ))]))
+        ))])),
     }
 }
 
 fn run_cmd<'s>(scope: &mut v8::HandleScope<'s>,
-               args: v8::FunctionCallbackArguments, mut rv: v8::ReturnValue) {
+               args: v8::FunctionCallbackArguments, _rv: v8::ReturnValue) {
     let context = v8::Context::new(scope);
-    let global = context.global(scope);
     let context_scope = &mut v8::ContextScope::new(scope, context);
 
     if args.length() != 0 {
@@ -24,5 +26,30 @@ fn run_cmd<'s>(scope: &mut v8::HandleScope<'s>,
         context_scope.throw_exception(exception);
     }
 
-    JSRunner::run_with_scope(v8::HandleScope::with_context(&mut self.isolate, context));
+    let state = scope.get_slot::<Rc<RefCell<JSRunnerState>>>().unwrap();
+    let state = RefCell::borrow(&state);
+    state.modules.get("Command")
+
+    let source = v8::String::new_from_utf8(scope, source,
+                                           v8::NewStringType::Normal).unwrap();
+
+    let try_catch = &mut v8::TryCatch::new(scope);
+
+    let script = match v8::Script::compile(try_catch, source, Option::None) {
+        Some(script) => script,
+        None => {
+            let exception = try_catch.exception().unwrap();
+            return Result::Err(
+                PrettyJsError::create(JsError::from_v8_exception(try_catch, exception)));
+        }
+    };
+
+    match script.run(try_catch) {
+        Some(result) => Result::Ok(result),
+        None => {
+            let exception = try_catch.exception().unwrap();
+            return Result::Err(PrettyJsError::create(
+                JsError::from_v8_exception(try_catch, exception)));
+        }
+    }
 }

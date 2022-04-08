@@ -29,7 +29,7 @@ fn run_cmd<'s>(scope: &mut v8::HandleScope<'s>,
         current = &current[index+1..];
     }
 
-    let context = v8::Context::new(scope);
+    let context = scope.get_current_context();
     let global = context.global(scope);
     let context_scope = &mut v8::ContextScope::new(scope, context);
 

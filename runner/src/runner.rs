@@ -1,4 +1,6 @@
 use std::cell::RefCell;
+use std::collections::HashMap;
+use std::marker::PhantomData;
 use std::rc::Rc;
 use anyhow::Error;
 use v8::{CreateParams, Object};
@@ -16,7 +18,8 @@ pub struct JSRunner {
 
 impl JSRunner {
     pub fn new(platform: Option<v8::SharedRef<v8::Platform>>, params: CreateParams,
-               providers: Vec<Provider>, shared_memory: Option<Shmem>) -> Self {
+               providers: Vec<Provider>, shared_memory: Option<Shmem>,
+               modules: HashMap<String, (usize, usize)>) -> Self {
         if !INITIALIZED {
             JSRunner::initialize(platform)
         }
@@ -68,7 +71,8 @@ impl JSRunner {
 
         isolate.set_slot(Rc::new(RefCell::new(JSRunnerState {
             global_context,
-            shared_memory
+            shared_memory,
+            modules,
         })));
 
         return JSRunner {
@@ -78,7 +82,30 @@ impl JSRunner {
 
     /// Runs the given script on the current isolate
     pub fn run(&mut self, source: &[u8]) -> Result<v8::Local<v8::Value>, Error> {
-        return JSRunner::run_with_scope(&mut self.handle_scope(), source);
+        let handle_scope = &mut self.handle_scope();
+
+        let source = v8::String::new_from_utf8(handle_scope, source,
+                                               v8::NewStringType::Normal).unwrap();
+
+        let try_catch = &mut v8::TryCatch::new(handle_scope);
+
+        let script = match v8::Script::compile(try_catch, source, Option::None) {
+            Some(script) => script,
+            None => {
+                let exception = try_catch.exception().unwrap();
+                return Result::Err(
+                    PrettyJsError::create(JsError::from_v8_exception(try_catch, exception)));
+            }
+        };
+
+        match script.run(try_catch) {
+            Some(result) => Result::Ok(result),
+            None => {
+                let exception = try_catch.exception().unwrap();
+                return Result::Err(PrettyJsError::create(
+                    JsError::from_v8_exception(try_catch, exception)));
+            }
+        }
     }
 
     /// Initializes V8 engine
@@ -124,32 +151,6 @@ impl JSRunner {
     pub fn handle_scope(&mut self) -> v8::HandleScope {
         let context = self.global_context();
         v8::HandleScope::with_context(&mut self.isolate, context)
-    }
-
-    /// Runs the given script on the current isolate
-    pub fn run_with_scope(handle_scope: &mut v8::HandleScope, source: &[u8]) -> Result<v8::Local<v8::Value>, Error> {
-        let source = v8::String::new_from_utf8(handle_scope, source,
-                                               v8::NewStringType::Normal).unwrap();
-
-        let try_catch = &mut v8::TryCatch::new(handle_scope);
-
-        let script = match v8::Script::compile(try_catch, source, Option::None) {
-            Some(script) => script,
-            None => {
-                let exception = try_catch.exception().unwrap();
-                return Result::Err(
-                    PrettyJsError::create(JsError::from_v8_exception(try_catch, exception)));
-            }
-        };
-
-        match script.run(try_catch) {
-            Some(result) => Result::Ok(result),
-            None => {
-                let exception = try_catch.exception().unwrap();
-                return Result::Err(PrettyJsError::create(
-                    JsError::from_v8_exception(try_catch, exception)));
-            }
-        }
     }
 }
 
