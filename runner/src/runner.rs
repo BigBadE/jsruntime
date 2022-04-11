@@ -1,6 +1,5 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::marker::PhantomData;
 use std::rc::Rc;
 use anyhow::Error;
 use v8::{CreateParams, Object};
