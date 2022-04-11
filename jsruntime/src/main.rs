@@ -5,10 +5,16 @@ use std::path::Path;
 use std::sync::{Arc, RwLock};
 use std::thread::JoinHandle;
 use shared_memory::ShmemConf;
+use machine::basic_globals::basic_globals;
 use machine::command_module::command_provider;
 use machine::global_provider::global_provider;
 use runner::runner::JSRunner;
 use runner::imports::Provider;
+
+pub fn providers() -> Vec<Provider> {
+    //All structs providing imports
+    vec!(global_provider(), command_provider(), basic_globals())
+}
 
 fn main() {
     let mut args = Vec::new();
@@ -40,11 +46,6 @@ fn main() {
                 }));
         }
     }
-}
-
-pub fn providers() -> Vec<Provider> {
-    //All structs providing imports
-    vec!(global_provider(), command_provider())
 }
 
 fn run(path: &String, memory_map: Option<String>, modules: Vec<&str>) {
