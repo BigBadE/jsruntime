@@ -73,6 +73,7 @@ impl JSRunner {
             global_context,
             shared_memory,
             modules,
+            output: Box::new(|_message| {})
         })));
 
         return JSRunner {
