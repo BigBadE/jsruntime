@@ -70,7 +70,7 @@ fn run(path: &String, memory_map: Option<String>, modules: Vec<&str>) {
     let memory;
 
     match memory_map {
-        Some(path) => memory = Option::Some(ShmemConf::new().os_id(&path).create().unwrap()),
+        Some(path) => memory = Option::Some(ShmemConf::new().os_id(path).create().unwrap()),
         None => memory = Option::None
     }
     let mut module_sizes = HashMap::new();
@@ -78,7 +78,7 @@ fn run(path: &String, memory_map: Option<String>, modules: Vec<&str>) {
     let mut i = 0;
     for module in modules {
         let split = module.find(':').unwrap();
-        let size = sizes[split..].parse::<usize>().unwrap();
+        let size = module[split..].parse::<usize>().unwrap();
 
         module_sizes.insert(module[0..split].to_string(),
                             (i, size));

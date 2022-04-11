@@ -2,6 +2,7 @@ use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
+use shared_memory::ShmemConf;
 use runner::imports::Provider;
 use runner::state::JSRunnerState;
 use util::error::JsError;
@@ -31,19 +32,20 @@ fn run_cmd<'s>(scope: &mut v8::HandleScope<'s>,
 
     let output: fn(String) = |_| {};
 
-    let buffer;
+    let mut buffer = Vec::new();
     unsafe {
         let state = try_catch.get_slot::<Rc<RefCell<JSRunnerState>>>().unwrap();
         let state = RefCell::borrow(&state);
+        let state = state.borrow();
 
-        let offset = state.modules.get("Command").unwrap().0;
-        let memory = state.shared_memory.borrow().unwrap().borrow();
+        let offset = state.get_offset("Command");
+        let memory = state.shared_memory.as_ref().unwrap();
         let size = memory.as_slice()[offset] as usize;
-        buffer = &memory.as_slice()[offset + 1..size];
+        buffer.copy_from_slice(&memory.as_slice()[offset + 1.. offset + 1 + size]);
     }
 
     let source = v8::String::new_from_utf8(try_catch,
-                                       buffer,
+                                       buffer.as_slice(),
                                        v8::NewStringType::Normal).unwrap();
 
     match v8::Script::compile(try_catch, source, Option::None) {

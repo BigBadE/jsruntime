@@ -2,10 +2,10 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 use anyhow::Error;
+use shared_memory::Shmem;
 use v8::{CreateParams, Object};
 use util::error::JsError;
 use util::fmt_error::PrettyJsError;
-use shared_memory::Shmem;
 use crate::imports::Provider;
 use crate::state::JSRunnerState;
 

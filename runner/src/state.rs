@@ -7,3 +7,9 @@ pub struct JSRunnerState {
     pub modules: HashMap<String, (usize, usize)>,
     pub output: fn(String)
 }
+
+impl JSRunnerState {
+    pub fn get_offset(&self, module: &str) -> usize {
+        return self.modules.get(module).unwrap().0;
+    }
+}
