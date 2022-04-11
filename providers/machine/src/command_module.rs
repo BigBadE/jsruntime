@@ -2,11 +2,8 @@ use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
-use shared_memory::ShmemConf;
 use runner::imports::Provider;
 use runner::state::JSRunnerState;
-use util::error::JsError;
-use util::fmt_error::PrettyJsError;
 
 pub fn command_provider() -> Provider {
     Provider {
@@ -19,7 +16,7 @@ pub fn command_provider() -> Provider {
 }
 
 fn run_cmd<'s>(scope: &mut v8::HandleScope<'s>,
-               args: v8::FunctionCallbackArguments, _rv: v8::ReturnValue) {
+               args: v8::FunctionCallbackArguments, mut rv: v8::ReturnValue) {
 
     if args.length() != 0 {
         let message = v8::String::new(scope, "Too many arguments".as_ref()).unwrap();
@@ -29,8 +26,6 @@ fn run_cmd<'s>(scope: &mut v8::HandleScope<'s>,
     }
 
     let try_catch = &mut v8::TryCatch::new(scope);
-
-    let output: fn(String) = |_| {};
 
     let mut buffer = Vec::new();
     unsafe {
@@ -50,18 +45,17 @@ fn run_cmd<'s>(scope: &mut v8::HandleScope<'s>,
 
     match v8::Script::compile(try_catch, source, Option::None) {
         Some(script) => {
-            let result = match script.run(try_catch) {
-                Some(result) => result.to_rust_string_lossy(try_catch),
+            match script.run(try_catch) {
+                Some(result) => rv.set(result),
                 None => {
                     let exception = try_catch.exception().unwrap();
-                    PrettyJsError::create(JsError::from_v8_exception(try_catch, exception)).to_string()
+                    try_catch.throw_exception(exception);
                 }
             };
-            output(result);
         }
         None => {
             let exception = try_catch.exception().unwrap();
-            output(PrettyJsError::create(JsError::from_v8_exception(try_catch, exception)).to_string());
+            try_catch.throw_exception(exception);
         }
     };
 }

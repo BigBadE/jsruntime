@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::{fs, io, thread};
 use std::io::Read;
-use std::ops::Index;
 use std::path::Path;
 use std::sync::{Arc, RwLock};
 use std::thread::JoinHandle;

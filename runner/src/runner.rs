@@ -7,6 +7,7 @@ use v8::{CreateParams, Object};
 use util::error::JsError;
 use util::fmt_error::PrettyJsError;
 use crate::imports::Provider;
+use crate::logger::Logger;
 use crate::state::JSRunnerState;
 
 static INITIALIZED: bool = false;
@@ -72,7 +73,7 @@ impl JSRunner {
             global_context,
             shared_memory,
             modules,
-            output: |_message| {}
+            output: Logger::new()
         })));
 
         return JSRunner {
