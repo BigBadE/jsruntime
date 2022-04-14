@@ -2,8 +2,9 @@ use std::collections::HashMap;
 use std::{fs, io, thread};
 use std::io::Read;
 use std::path::Path;
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, RwLock, RwLockWriteGuard};
 use std::thread::JoinHandle;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use shared_memory::ShmemConf;
 use machine::basic_globals::basic_globals;
 use machine::command_module::command_provider;
@@ -17,34 +18,36 @@ pub fn providers() -> Vec<Provider> {
 }
 
 fn main() {
-    let mut args = Vec::new();
     let processes: Arc<RwLock<HashMap<String, JoinHandle<()>>>> =
         Arc::new(RwLock::new(HashMap::new()));
 
     loop {
-        io::stdin().read_to_end(&mut args).unwrap();
-        let output = String::from_utf8_lossy(&args).into_owned();
-        let mut map = processes.write().unwrap();
-        if !output.contains('\u{0000}') {
-            if !map.contains_key(output.as_str()) {
-                map.insert(
-                    output.clone(),
-                    thread::spawn(move || {
-                        run(&output,
-                            Option::None, vec![])
-                    }));
-                continue;
-            }
-            map.remove(output.as_str());
-        } else {
+        let mut output = String::new();
+        io::stdin().read_line(&mut output).unwrap();
+        start_process(processes.write().unwrap(), output);
+    }
+}
+
+fn start_process(mut map: RwLockWriteGuard<HashMap<String, JoinHandle<()>>>, output: String) {
+    if !output.contains('\u{0000}') {
+        if !map.contains_key(output.as_str()) {
             map.insert(
-                String::from(output.split('\u{0000}').next().unwrap()),
+                output.clone(),
                 thread::spawn(move || {
-                    let split: Vec<&str> = output.split('\u{0000}').collect();
-                    run(&String::from(split[0]), Option::Some(String::from(split[1])),
-                        split[2].split(",").collect())
+                    run(&output,
+                        Option::None, vec![])
                 }));
+            return;
         }
+        map.remove(output.as_str());
+    } else {
+        map.insert(
+            String::from(output.split('\u{0000}').next().unwrap()),
+            thread::spawn(move || {
+                let split: Vec<&str> = output.split('\u{0000}').collect();
+                run(&String::from(split[0]), Option::Some(String::from(split[1])),
+                    split[2].split(",").collect())
+            }));
     }
 }
 
