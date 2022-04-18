@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::{fs, io, thread};
-use std::io::Write;
 use std::path::Path;
 use std::sync::{Arc, RwLock, RwLockWriteGuard};
 use std::thread::JoinHandle;
@@ -17,6 +16,7 @@ pub fn providers() -> Vec<Provider> {
 }
 
 fn main() {
+
     let processes: Arc<RwLock<HashMap<String, JoinHandle<()>>>> =
         Arc::new(RwLock::new(HashMap::new()));
 
