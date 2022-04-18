@@ -25,5 +25,5 @@ fn run_cmd<'s>(scope: &mut v8::HandleScope<'s>,
     let state = scope.get_slot::<Rc<RefCell<JSRunnerState>>>().unwrap();
     let mut state = RefCell::borrow_mut(&state);
 
-    state.output.log(message);
+    state.output.log(message + "\n");
 }
