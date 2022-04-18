@@ -16,11 +16,11 @@ pub fn providers() -> Vec<Provider> {
 }
 
 fn main() {
-
     let processes: Arc<RwLock<HashMap<String, JoinHandle<()>>>> =
         Arc::new(RwLock::new(HashMap::new()));
 
     loop {
+        println!("Testing!");
         let mut output = String::new();
         io::stdin().read_line(&mut output).unwrap();
         start_process(processes.write().unwrap(), output);
