@@ -1,5 +1,8 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
+use std::rc::Rc;
 use runner::imports::Provider;
+use runner::state::JSRunnerState;
 
 const TARGETS: [&str; 1] = ["file"];
 
@@ -29,46 +32,48 @@ fn run_cmd<'s>(scope: &mut v8::HandleScope<'s>,
         current = &current[index+1..];
     }
 
-    let context = scope.get_current_context();
-    let global = context.global(scope);
-    let context_scope = &mut v8::ContextScope::new(scope, context);
+    {
+        let context = scope.get_current_context();
+        let global = context.global(scope);
+        let context_scope = &mut v8::ContextScope::new(scope, context);
 
-    let name: v8::Local<v8::Value> = v8::String::new(context_scope, command.as_str()).unwrap().into();
+        let name: v8::Local<v8::Value> = v8::String::new(context_scope, command.as_str()).unwrap().into();
 
-    match global.get(context_scope, name) {
-        Some(found) => {
-            if found.is_function() {
-                call_function(context_scope,
-                              v8::Local::<v8::Function>::try_from(found).unwrap(),
-                              &mut rv, args.this().into(), &command_args);
-                return;
-            }
-        }
-        None => {}
-    }
-
-    for target in TARGETS {
-        let key = v8::String::new(context_scope, target).unwrap().into();
-        let found = global.get(context_scope, key).unwrap();
-        if !found.is_object() {
-            continue;
-        }
-        match v8::Local::<v8::Object>::try_from(found).unwrap().get(context_scope, name) {
+        match global.get(context_scope, name) {
             Some(found) => {
                 if found.is_function() {
                     call_function(context_scope,
                                   v8::Local::<v8::Function>::try_from(found).unwrap(),
                                   &mut rv, args.this().into(), &command_args);
+                    return;
                 }
-                return;
             }
             None => {}
         }
+
+        for target in TARGETS {
+            let key = v8::String::new(context_scope, target).unwrap().into();
+            let found = global.get(context_scope, key).unwrap();
+            if !found.is_object() {
+                continue;
+            }
+            match v8::Local::<v8::Object>::try_from(found).unwrap().get(context_scope, name) {
+                Some(found) => {
+                    if found.is_function() {
+                        call_function(context_scope,
+                                      v8::Local::<v8::Function>::try_from(found).unwrap(),
+                                      &mut rv, args.this().into(), &command_args);
+                    }
+                    return;
+                }
+                None => {}
+            }
+        }
     }
 
-    let message = v8::String::new(context_scope, "No method found".as_ref()).unwrap();
-    let exception = v8::Exception::error(context_scope, message);
-    context_scope.throw_exception(exception);
+    let state = scope.get_slot::<Rc<RefCell<JSRunnerState>>>().unwrap();
+    let mut state = RefCell::borrow_mut(&state);
+    state.output.log(format!("Unknown command {}", command));
 }
 
 fn call_function(scope: &mut v8::HandleScope, function: v8::Local<v8::Function>,

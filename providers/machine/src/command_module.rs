@@ -36,6 +36,8 @@ fn run_cmd<'s>(scope: &mut v8::HandleScope<'s>,
         let offset = state.get_offset("Command");
         let memory = state.shared_memory.as_ref().unwrap();
         let size = memory.as_slice()[offset] as usize;
+
+        buffer.resize(size, 0);
         buffer.copy_from_slice(&memory.as_slice()[offset + 1.. offset + 1 + size]);
     }
 
