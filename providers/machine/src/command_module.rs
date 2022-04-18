@@ -18,7 +18,7 @@ pub fn command_provider() -> Provider {
 
 fn run_cmd<'s>(scope: &mut v8::HandleScope<'s>,
                args: v8::FunctionCallbackArguments, mut rv: v8::ReturnValue) {
-    println!("Testing 123");
+
 
     if args.length() != 0 {
         let message = v8::String::new(scope, "Too many arguments".as_ref()).unwrap();

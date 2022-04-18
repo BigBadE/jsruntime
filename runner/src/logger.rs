@@ -14,8 +14,6 @@ impl Logger {
     }
 
     pub fn log(&mut self, mut message: String) {
-        //TODO remove when output is working
-        println!("{}", message);
 
         if message.len() > 2048 {
             message = message[message.len()-2048..].to_string()

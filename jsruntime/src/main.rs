@@ -113,8 +113,8 @@ fn run(path: &String, memory_map: Option<String>, modules: Vec<&str>) -> Option<
         None => memory = Option::None
     }
 
-    let mut runner = JSRunner::new(
-        Option::None, params, found_providers, memory, module_sizes);
+    let mut runner = JSRunner::new(Option::None, params,
+                                   found_providers, memory, module_sizes);
 
     return match fs::read_to_string(Path::new(path)) {
         Ok(source) => {

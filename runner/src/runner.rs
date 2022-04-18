@@ -44,14 +44,19 @@ impl JSRunner {
                                 v8::String::new(context_scope, name).unwrap().into();
 
                             let object: v8::Local<Object> = match global.get(context_scope, global_key) {
-                                Some(found) => found.try_into().unwrap(),
+                                Some(found) => {
+                                    match found.try_into() {
+                                        Ok(found) => found,
+                                        Err(_error) => Object::new(context_scope)
+                                    }
+                                },
                                 None => Object::new(context_scope)
                             };
 
                             for (func_name, function) in functions {
                                 set_func(context_scope, object, func_name, function);
                             }
-                            println!("Added object {}", name);
+
                             global.set(context_scope, global_key,
                                        object.into());
                         }
