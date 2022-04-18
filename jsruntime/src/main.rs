@@ -3,6 +3,7 @@ use std::{fs, io, thread};
 use std::path::Path;
 use std::sync::{Arc, RwLock, RwLockWriteGuard};
 use std::thread::JoinHandle;
+use anyhow::Error;
 use shared_memory::ShmemConf;
 use machine::basic_globals::basic_globals;
 use machine::command_module::command_provider;
@@ -31,25 +32,32 @@ fn start_process(mut map: RwLockWriteGuard<HashMap<String, JoinHandle<()>>>, out
         if !map.contains_key(output.as_str()) {
             map.insert(
                 output.clone(),
-                thread::spawn(move || {
-                    run(&output,
-                        Option::None, vec![])
-                }));
+                thread::Builder::new().name(output.clone()).spawn(move || {
+                    let result = run(&output,
+                            Option::None, vec![]);
+                    if result.is_some() {
+                        println!("{}", result.unwrap());
+                    }
+                }).unwrap());
             return;
         }
         map.remove(output.as_str());
     } else {
+        let name = String::from(output.split('\u{0000}').next().unwrap());
         map.insert(
-            String::from(output.split('\u{0000}').next().unwrap()),
-            thread::spawn(move || {
+            name.clone(),
+            thread::Builder::new().name(name.clone()).spawn(move || {
                 let split: Vec<&str> = output.split('\u{0000}').collect();
-                run(&String::from(split[0]), Option::Some(String::from(split[1])),
-                    split[2].split(",").collect())
-            }));
+                let result = run(&name, Option::Some(String::from(split[1])),
+                    split[2].split(",").collect());
+                if result.is_some() {
+                    println!("{}", result.unwrap());
+                }
+            }).unwrap());
     }
 }
 
-fn run(path: &String, memory_map: Option<String>, modules: Vec<&str>) {
+fn run(path: &String, memory_map: Option<String>, modules: Vec<&str>) -> Option<Error> {
     let params = v8::Isolate::create_params()
         .array_buffer_allocator(v8::new_default_allocator())
         .allow_atomics_wait(false)
@@ -68,27 +76,49 @@ fn run(path: &String, memory_map: Option<String>, modules: Vec<&str>) {
         }
     }
 
-    let memory;
-
-    match memory_map {
-        Some(path) => memory = Option::Some(ShmemConf::new().os_id(path).create().unwrap()),
-        None => memory = Option::None
-    }
     let mut module_sizes = HashMap::new();
 
     let mut i = 0;
     for module in modules {
-        let split = module.find(':').unwrap();
-        let size = module[split..].parse::<usize>().unwrap();
+        let split;
+        match module.find(':') {
+            Some(found) => split = found,
+            None => continue
+        };
+        let size;
+        match module[split+1..].parse::<usize>() {
+            Ok(found) => size = found,
+            Err(error) => return Option::Some(
+                Error::msg(format!("{} for usize {}", error, &module[split+1..])))
+        }
 
         module_sizes.insert(module[0..split].to_string(),
                             (i, size));
         i += size;
     }
 
+    let memory;
+
+    match memory_map {
+        Some(memory_path) => {
+            match ShmemConf::new().os_id(memory_path).size(i).create() {
+                Ok(mem) => memory = Option::Some(mem),
+                Err(error) => return Option::Some(Error::new(error))
+            }
+        },
+        None => memory = Option::None
+    }
+
     let mut runner = JSRunner::new(
         Option::None, params, found_providers, memory, module_sizes);
 
-    let _result = runner.run(fs::read_to_string(Path::new(
-        path)).unwrap().as_bytes());
+    return match fs::read_to_string(Path::new(path)) {
+        Ok(source) => {
+            match runner.run(source.as_bytes()) {
+                Ok(_result) => Option::None,
+                Err(error) => Option::Some(error)
+            }
+        },
+        Err(error) => Option::Some(Error::msg(format!("{} for {}", error, path)))
+    }
 }

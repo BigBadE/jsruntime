@@ -90,6 +90,7 @@ impl JSRunner {
 
         let try_catch = &mut v8::TryCatch::new(handle_scope);
 
+        println!("Compiling");
         let script = match v8::Script::compile(try_catch, source, Option::None) {
             Some(script) => script,
             None => {
@@ -99,6 +100,7 @@ impl JSRunner {
             }
         };
 
+        println!("Running");
         match script.run(try_catch) {
             Some(result) => Result::Ok(result),
             None => {
