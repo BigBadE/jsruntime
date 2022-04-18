@@ -20,7 +20,6 @@ fn main() {
         Arc::new(RwLock::new(HashMap::new()));
 
     loop {
-        println!("Testing!");
         let mut output = String::new();
         io::stdin().read_line(&mut output).unwrap();
         start_process(processes.write().unwrap(), output);
