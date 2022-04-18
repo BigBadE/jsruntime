@@ -1,30 +1,37 @@
 use std::ptr;
 
 pub struct Logger {
-    pub buffer: Box<[u8]>,
+    pub buffer: Box<[u8; 2048]>,
     pub index: usize,
 }
 
 impl Logger {
     pub fn new() -> Logger {
         Logger {
-            buffer: Vec::with_capacity(2048).into_boxed_slice(),
+            buffer: Box::new([0; 2048]),
             index: 0,
         }
     }
 
-    pub fn log(&mut self, message: String) {
-        let removing = self.index + message.len() - 2048;
+    pub fn log(&mut self, mut message: String) {
+        //TODO remove when output is working
+        println!("{}", message);
 
-        if removing > 0 {
-            self.index -= removing;
-            Logger::copy_to_start(&mut self.buffer, message.len() - removing);
+        if message.len() > 2048 {
+            message = message[message.len()-2048..].to_string()
         }
 
-        Logger::copy(&mut self.buffer, message)
+        if self.index + message.len() > 2048 {
+            let removing = self.index + message.len() - 2048;
+            self.index -= removing;
+            Logger::copy_to_start(&mut self.buffer, removing);
+        }
+
+        self.index += message.len();
+        Logger::copy(&mut self.buffer, message);
     }
 
-    fn copy(vec: &mut [u8], mut target: String) {
+    fn copy(vec: &mut [u8; 2048], mut target: String) {
         let dest = vec.as_mut_ptr();
 
         unsafe {
@@ -35,7 +42,7 @@ impl Logger {
         }
     }
 
-    fn copy_to_start(vec: &mut [u8], length: usize) {
+    fn copy_to_start(vec: &mut [u8; 2048], length: usize) {
         let src = vec.as_mut_ptr();
 
         unsafe {
@@ -51,18 +58,22 @@ mod tests {
     #[test]
     fn test_copy() {
         let original = String::from_utf8(vec!(2, 3)).unwrap();
-        let mut test_case: [u8; 4] = [0, 1, 0, 0];
+        let mut test_case: [u8; 2048] = [0; 2048];
         Logger::copy(&mut test_case, original);
-        for i in 0..4 {
-            assert_eq!(test_case[i], i as u8);
+        for i in 3..4 {
+            assert_eq!(test_case[i+2046], i as u8);
         }
     }
 
     #[test]
     fn test_copy_to_start() {
-        let mut test_case: [u8; 4] = [0, 0, 1, 2];
+        let mut test_case: [u8; 2048] = [0; 2048];
+
+        for i in 0..2 {
+            test_case[2048-i] = i as u8;
+        }
+
         Logger::copy_to_start(&mut test_case, 3);
-        print!("[{}, {}, {}, {}]", test_case[0], test_case[1], test_case[2], test_case[3]);
         for i in 0..2 {
             assert_eq!(test_case[i], i as u8);
         }

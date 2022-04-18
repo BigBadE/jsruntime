@@ -1,6 +1,7 @@
 use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::ptr;
 use std::rc::Rc;
 use runner::imports::Provider;
 use runner::state::JSRunnerState;
@@ -17,6 +18,7 @@ pub fn command_provider() -> Provider {
 
 fn run_cmd<'s>(scope: &mut v8::HandleScope<'s>,
                args: v8::FunctionCallbackArguments, mut rv: v8::ReturnValue) {
+    println!("Testing 123");
 
     if args.length() != 0 {
         let message = v8::String::new(scope, "Too many arguments".as_ref()).unwrap();
@@ -58,4 +60,16 @@ fn run_cmd<'s>(scope: &mut v8::HandleScope<'s>,
             try_catch.throw_exception(exception);
         }
     };
+
+    //Write output to shmem
+    unsafe {
+        let state = try_catch.get_slot::<Rc<RefCell<JSRunnerState>>>().unwrap();
+        let state = RefCell::borrow(&state);
+        let state = state.borrow();
+
+        let offset = state.get_offset("Command");
+        let memory = state.shared_memory.as_ref().unwrap();
+        ptr::copy_nonoverlapping(state.output.buffer.as_ptr(),
+                                 memory.as_ptr().offset((offset + 129) as isize), 2048);
+    }
 }

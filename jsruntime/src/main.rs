@@ -63,20 +63,9 @@ fn run(path: &String, memory_map: Option<String>, modules: Vec<&str>) -> Option<
         .allow_atomics_wait(false)
         .heap_limits(0, 3 * 1024 * 1024);
 
-    let mut found_providers = vec!();
-
-    for provider in providers() {
-        match provider.module {
-            Some(module) => {
-                if modules.contains(&module) {
-                    found_providers.push(provider);
-                }
-            }
-            _ => found_providers.push(provider)
-        }
-    }
-
     let mut module_sizes = HashMap::new();
+
+    let mut allowed_modules = vec!();
 
     let mut i = 0;
     for module in modules {
@@ -92,9 +81,24 @@ fn run(path: &String, memory_map: Option<String>, modules: Vec<&str>) -> Option<
                 Error::msg(format!("{} for usize {}", error, &module[split+1..])))
         }
 
+        allowed_modules.push(&module[..split]);
+
         module_sizes.insert(module[0..split].to_string(),
                             (i, size));
         i += size;
+    }
+
+    let mut found_providers = vec!();
+
+    for provider in providers() {
+        match provider.module {
+            Some(module) => {
+                if allowed_modules.contains(&module) {
+                    found_providers.push(provider);
+                }
+            }
+            _ => found_providers.push(provider)
+        }
     }
 
     let memory;
@@ -115,9 +119,10 @@ fn run(path: &String, memory_map: Option<String>, modules: Vec<&str>) -> Option<
     return match fs::read_to_string(Path::new(path)) {
         Ok(source) => {
             match runner.run(source.as_bytes()) {
-                Ok(_result) => Option::None,
-                Err(error) => Option::Some(error)
+                Err(error) => runner.log(error.to_string()),
+                _ => {}
             }
+            Option::None
         },
         Err(error) => Option::Some(Error::msg(format!("{} for {}", error, path)))
     }

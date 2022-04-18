@@ -51,6 +51,7 @@ impl JSRunner {
                             for (func_name, function) in functions {
                                 set_func(context_scope, object, func_name, function);
                             }
+                            println!("Added object {}", name);
                             global.set(context_scope, global_key,
                                        object.into());
                         }
@@ -90,7 +91,6 @@ impl JSRunner {
 
         let try_catch = &mut v8::TryCatch::new(handle_scope);
 
-        println!("Compiling");
         let script = match v8::Script::compile(try_catch, source, Option::None) {
             Some(script) => script,
             None => {
@@ -100,7 +100,6 @@ impl JSRunner {
             }
         };
 
-        println!("Running");
         match script.run(try_catch) {
             Some(result) => Result::Ok(result),
             None => {
@@ -154,6 +153,12 @@ impl JSRunner {
     pub fn handle_scope(&mut self) -> v8::HandleScope {
         let context = self.global_context();
         v8::HandleScope::with_context(&mut self.isolate, context)
+    }
+
+    pub fn log(self, message: String) {
+        let state = JSRunner::get_state(&self.isolate);
+        let mut state = RefCell::borrow_mut(&state);
+        state.output.log(message);
     }
 }
 
