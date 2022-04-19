@@ -39,6 +39,7 @@ fn run_cmd<'s>(scope: &mut v8::HandleScope<'s>,
 
         buffer.resize(size, 0);
         buffer.copy_from_slice(&memory.as_slice()[offset + 1.. offset + 1 + size]);
+        ptr::copy_nonoverlapping([0; 128].as_mut_ptr(), memory.as_ptr(), 128);
     }
 
     let source = v8::String::new_from_utf8(try_catch,
