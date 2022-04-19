@@ -18,7 +18,7 @@ pub struct JSRunner {
 
 impl JSRunner {
     pub fn new(platform: Option<v8::SharedRef<v8::Platform>>, params: CreateParams,
-               providers: Vec<Provider>, shared_memory: Option<Shmem>,
+               providers: Vec<Provider>, shared_memory: Shmem,
                modules: HashMap<String, (usize, usize)>) -> Self {
         if !INITIALIZED {
             JSRunner::initialize(platform)

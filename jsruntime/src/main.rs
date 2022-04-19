@@ -28,36 +28,20 @@ fn main() {
 }
 
 fn start_process(mut map: RwLockWriteGuard<HashMap<String, JoinHandle<()>>>, output: String) {
-    if !output.contains('\u{0000}') {
-        if !map.contains_key(output.as_str()) {
-            map.insert(
-                output.clone(),
-                thread::Builder::new().name(output.clone()).spawn(move || {
-                    let result = run(&output,
-                            Option::None, vec![]);
-                    if result.is_some() {
-                        println!("{}", result.unwrap());
-                    }
-                }).unwrap());
-            return;
-        }
-        map.remove(output.as_str());
-    } else {
-        let name = String::from(output.split('\u{0000}').next().unwrap());
-        map.insert(
-            name.clone(),
-            thread::Builder::new().name(name.clone()).spawn(move || {
-                let split: Vec<&str> = output.split('\u{0000}').collect();
-                let result = run(&name, Option::Some(String::from(split[1])),
-                    split[2].split(",").collect());
-                if result.is_some() {
-                    println!("{}", result.unwrap());
-                }
-            }).unwrap());
-    }
+    let name = String::from(output.split('\u{0000}').next().unwrap());
+    map.insert(
+        name.clone(),
+        thread::Builder::new().name(name.clone()).spawn(move || {
+            let split: Vec<&str> = output.split('\u{0000}').collect();
+            let result = run(&name, String::from(split[1]),
+                             split[2].split(",").collect());
+            if result.is_some() {
+                println!("{}", result.unwrap());
+            }
+        }).unwrap());
 }
 
-fn run(path: &String, memory_map: Option<String>, modules: Vec<&str>) -> Option<Error> {
+fn run(path: &String, memory_map: String, modules: Vec<&str>) -> Option<Error> {
     let params = v8::Isolate::create_params()
         .array_buffer_allocator(v8::new_default_allocator())
         .allow_atomics_wait(false)
@@ -75,10 +59,10 @@ fn run(path: &String, memory_map: Option<String>, modules: Vec<&str>) -> Option<
             None => continue
         };
         let size;
-        match module[split+1..].parse::<usize>() {
+        match module[split + 1..].parse::<usize>() {
             Ok(found) => size = found,
             Err(error) => return Option::Some(
-                Error::msg(format!("{} for usize {}", error, &module[split+1..])))
+                Error::msg(format!("{} for usize {}", error, &module[split + 1..])))
         }
 
         allowed_modules.push(&module[..split]);
@@ -101,17 +85,10 @@ fn run(path: &String, memory_map: Option<String>, modules: Vec<&str>) -> Option<
         }
     }
 
-    let memory;
-
-    match memory_map {
-        Some(memory_path) => {
-            match ShmemConf::new().os_id(memory_path).size(i).create() {
-                Ok(mem) => memory = Option::Some(mem),
-                Err(error) => return Option::Some(Error::new(error))
-            }
-        },
-        None => memory = Option::None
-    }
+    let memory = match ShmemConf::new().os_id(memory_map).size(i).create() {
+        Ok(mem) => mem,
+        Err(error) => return Option::Some(Error::new(error))
+    };
 
     let mut runner = JSRunner::new(Option::None, params,
                                    found_providers, memory, module_sizes);
@@ -123,7 +100,7 @@ fn run(path: &String, memory_map: Option<String>, modules: Vec<&str>) -> Option<
                 _ => {}
             }
             Option::None
-        },
+        }
         Err(error) => Option::Some(Error::msg(format!("{} for {}", error, path)))
-    }
+    };
 }

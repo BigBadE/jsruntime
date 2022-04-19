@@ -34,7 +34,7 @@ fn run_cmd<'s>(scope: &mut v8::HandleScope<'s>,
         let state = state.borrow();
 
         let offset = state.get_offset("Command");
-        let memory = state.shared_memory.as_ref().unwrap();
+        let memory = &state.shared_memory;
         let size = memory.as_slice()[offset] as usize;
 
         buffer.resize(size, 0);
@@ -69,7 +69,7 @@ fn run_cmd<'s>(scope: &mut v8::HandleScope<'s>,
         let state = state.borrow();
 
         let offset = state.get_offset("Command");
-        let memory = state.shared_memory.as_ref().unwrap();
+        let memory = &state.shared_memory;
         ptr::copy_nonoverlapping(state.output.buffer.as_ptr(),
                                  memory.as_ptr().offset((offset + 129) as isize), 2048);
     }

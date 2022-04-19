@@ -4,7 +4,7 @@ use std::rc::Rc;
 use runner::imports::Provider;
 use runner::state::JSRunnerState;
 
-const TARGETS: [&str; 1] = ["file"];
+const TARGETS: [&str; 1] = ["system"];
 
 pub fn global_provider() -> Provider {
     Provider {
