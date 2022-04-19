@@ -14,7 +14,6 @@ impl Logger {
     }
 
     pub fn log(&mut self, mut message: String) {
-
         if message.len() > 2048 {
             message = message[message.len()-2048..].to_string()
         }
@@ -22,20 +21,21 @@ impl Logger {
         if self.index + message.len() > 2048 {
             let removing = self.index + message.len() - 2048;
             self.index -= removing;
-            Logger::copy_to_start(&mut self.buffer, removing);
+            Logger::copy_to_start(&mut self.buffer, self.index + message.len());
         }
 
-        self.index += message.len();
-        Logger::copy(&mut self.buffer, message);
+        let length = message.len();
+        Logger::copy(&mut self.buffer, message, self.index);
+        self.index += length;
     }
 
-    fn copy(vec: &mut [u8; 2048], mut target: String) {
+    fn copy(vec: &mut [u8; 2048], mut target: String, index: usize) {
         let dest = vec.as_mut_ptr();
 
         unsafe {
             let src = target.as_bytes_mut().as_mut_ptr();
 
-            ptr::copy_nonoverlapping(src, dest.offset((vec.len() - target.len()) as isize),
+            ptr::copy_nonoverlapping(src, dest.offset(index as isize),
                                      target.len())
         }
     }
@@ -44,7 +44,7 @@ impl Logger {
         let src = vec.as_mut_ptr();
 
         unsafe {
-            ptr::copy(src.clone().offset((vec.len()-length) as isize), src, length)
+            ptr::copy(src.clone().offset((2048-length) as isize), src, length)
         }
     }
 }
@@ -55,25 +55,36 @@ mod tests {
 
     #[test]
     fn test_copy() {
-        let original = String::from_utf8(vec!(2, 3)).unwrap();
-        let mut test_case: [u8; 2048] = [0; 2048];
-        Logger::copy(&mut test_case, original);
-        for i in 3..4 {
-            assert_eq!(test_case[i+2046], i as u8);
+        let mut original = [0 as u8; 2048];
+        let target = String::from_utf8(Vec::from([1 as u8; 2048])).unwrap();
+        Logger::copy(&mut original, target, 40);
+
+        for i in 0..40 {
+            assert_eq!(0, original[i]);
+        }
+        for i in 41..2048 {
+            assert_eq!(1, original[i]);
         }
     }
 
     #[test]
     fn test_copy_to_start() {
-        let mut test_case: [u8; 2048] = [0; 2048];
+        let mut original = [0 as u8; 2048];
 
-        for i in 0..2 {
-            test_case[2048-i] = i as u8;
+        let mut val = 0;
+        for i in 48..2048 {
+            original[i] = val;
+            if val == 255 {
+                val = 0;
+            } else {
+                val += 1;
+            }
         }
 
-        Logger::copy_to_start(&mut test_case, 3);
-        for i in 0..2 {
-            assert_eq!(test_case[i], i as u8);
+        Logger::copy_to_start(&mut original, 2000);
+
+        for i in 0..2000 {
+            assert_eq!(original[i], (i % 256) as u8);
         }
     }
 }
