@@ -18,6 +18,7 @@ pub fn basic_globals() -> Provider {
 fn sync<'s>(scope: &mut v8::HandleScope<'s>,
             _args: v8::FunctionCallbackArguments, _rv: v8::ReturnValue) {
     unsafe {
+        println!("2");
         let state = scope.get_slot::<Rc<RefCell<JSRunnerState>>>().unwrap();
         let mut state = RefCell::borrow_mut(&state);
 
@@ -27,6 +28,7 @@ fn sync<'s>(scope: &mut v8::HandleScope<'s>,
         while sync[offset] != 1 {
             //Loop until it sync's
         }
+        println!("Sync'd");
         sync[offset] = 0;
     }
 }
