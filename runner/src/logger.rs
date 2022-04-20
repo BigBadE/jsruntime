@@ -5,6 +5,7 @@ const SIZE: usize = 0xF00;
 pub struct Logger {
     pub buffer: Box<[u8; SIZE]>,
     pub index: usize,
+    pub updated: bool
 }
 
 impl Logger {
@@ -12,6 +13,7 @@ impl Logger {
         Logger {
             buffer: Box::new([0; SIZE]),
             index: 0,
+            updated: false
         }
     }
 
@@ -29,6 +31,7 @@ impl Logger {
         let length = message.len();
         Logger::copy(&mut self.buffer, message, self.index);
         self.index += length;
+        self.updated = true;
     }
 
     fn copy(vec: &mut [u8; SIZE], mut target: String, index: usize) {
@@ -46,7 +49,7 @@ impl Logger {
         let src = vec.as_mut_ptr();
 
         unsafe {
-            ptr::copy(src.clone().offset(length as isize), src, 2048-length)
+            ptr::copy(src.clone().offset(length as isize), src, SIZE-length)
         }
     }
 }

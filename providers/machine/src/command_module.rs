@@ -61,16 +61,4 @@ fn run_cmd<'s>(scope: &mut v8::HandleScope<'s>,
             try_catch.throw_exception(exception);
         }
     };
-
-    //Write output to shmem
-    unsafe {
-        let state = try_catch.get_slot::<Rc<RefCell<JSRunnerState>>>().unwrap();
-        let state = RefCell::borrow(&state);
-        let state = state.borrow();
-
-        let offset = state.get_offset("Command");
-        let memory = &state.shared_memory;
-        ptr::copy_nonoverlapping(state.output.buffer.as_ptr(),
-                                 memory.as_ptr().offset((offset + 129) as isize), 2048);
-    }
 }

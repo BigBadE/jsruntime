@@ -1,6 +1,8 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
+use std::{ptr, thread};
+use std::time::Duration;
 use runner::imports::Provider;
 use runner::state::JSRunnerState;
 
@@ -18,17 +20,33 @@ pub fn basic_globals() -> Provider {
 fn sync<'s>(scope: &mut v8::HandleScope<'s>,
             _args: v8::FunctionCallbackArguments, _rv: v8::ReturnValue) {
     unsafe {
-        println!("2");
         let state = scope.get_slot::<Rc<RefCell<JSRunnerState>>>().unwrap();
         let mut state = RefCell::borrow_mut(&state);
 
-        let offset = state.get_offset("Command");
-        let sync = state.shared_memory.as_slice_mut();
+        let offset = state.get_offset("Sync");
+        let cmd_offset = state.get_offset("Command");
+        let pointer = state.output.buffer.as_ptr();
+
+        let updated = state.output.updated;
+        state.output.updated = false;
+
+        let memory = &mut state.shared_memory;
+
+
+        //Write output to shmem
+        ptr::copy_nonoverlapping(pointer,
+                                 memory.as_ptr().offset((cmd_offset + 130) as isize), 2048);
+
+        let sync = memory.as_slice_mut();
+
+        if updated {
+            sync[cmd_offset + 129] = 1;
+        }
 
         while sync[offset] != 1 {
             //Loop until it sync's
+            thread::sleep(Duration::new(0, 1));
         }
-        println!("Sync'd");
         sync[offset] = 0;
     }
 }
