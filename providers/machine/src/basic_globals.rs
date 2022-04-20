@@ -34,8 +34,9 @@ fn sync<'s>(scope: &mut v8::HandleScope<'s>,
 
 
         //Write output to shmem
-        ptr::copy_nonoverlapping(pointer,
-                                 memory.as_ptr().offset((cmd_offset + 130) as isize), 2048);
+        ptr::copy_nonoverlapping(
+            pointer, memory.as_ptr().offset((cmd_offset + 130) as isize),
+            runner::logger::SIZE);
 
         let sync = memory.as_slice_mut();
 

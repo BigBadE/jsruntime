@@ -1,6 +1,6 @@
 use std::ptr;
 
-const SIZE: usize = 0xF00;
+pub const SIZE: usize = 0xF00;
 
 pub struct Logger {
     pub buffer: Box<[u8; SIZE]>,
