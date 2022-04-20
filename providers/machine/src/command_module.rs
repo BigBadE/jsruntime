@@ -1,8 +1,8 @@
-use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::ptr;
 use std::rc::Rc;
+
 use runner::imports::Provider;
 use runner::state::JSRunnerState;
 
@@ -27,23 +27,26 @@ fn run_cmd<'s>(scope: &mut v8::HandleScope<'s>,
 
     let try_catch = &mut v8::TryCatch::new(scope);
 
-    let mut buffer = Vec::new();
+    let command;
     unsafe {
         let state = try_catch.get_slot::<Rc<RefCell<JSRunnerState>>>().unwrap();
-        let state = RefCell::borrow(&state);
-        let state = state.borrow();
+        let mut state = RefCell::borrow_mut(&state);
 
         let offset = state.get_offset("Command");
         let memory = &state.shared_memory;
         let size = memory.as_slice()[offset] as usize;
 
+        let mut buffer = Vec::new();
         buffer.resize(size, 0);
         buffer.copy_from_slice(&memory.as_slice()[offset + 1.. offset + 1 + size]);
         ptr::copy_nonoverlapping([0; 128].as_mut_ptr(), memory.as_ptr(), 128);
+
+        command = String::from_utf8(buffer).unwrap();
+        state.output.log(&command);
     }
 
     let source = v8::String::new_from_utf8(try_catch,
-                                       buffer.as_slice(),
+                                       command.as_bytes(),
                                        v8::NewStringType::Normal).unwrap();
 
     match v8::Script::compile(try_catch, source, Option::None) {
@@ -51,12 +54,14 @@ fn run_cmd<'s>(scope: &mut v8::HandleScope<'s>,
             match script.run(try_catch) {
                 Some(result) => rv.set(result),
                 None => {
+                    println!("Error!");
                     let exception = try_catch.exception().unwrap();
                     try_catch.throw_exception(exception);
                 }
             };
         }
         None => {
+            println!("Error!");
             let exception = try_catch.exception().unwrap();
             try_catch.throw_exception(exception);
         }

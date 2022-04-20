@@ -160,7 +160,7 @@ impl JSRunner {
         v8::HandleScope::with_context(&mut self.isolate, context)
     }
 
-    pub fn log(self, message: String) {
+    pub fn log(self, message: &String) {
         let state = JSRunner::get_state(&self.isolate);
         let mut state = RefCell::borrow_mut(&state);
         state.output.log(message);

@@ -17,28 +17,28 @@ impl Logger {
         }
     }
 
-    pub fn log(&mut self, mut message: String) {
-        if message.len() > SIZE {
-            message = message[message.len()-SIZE..].to_string()
+    pub fn log(&mut self, message: &String) {
+        let mut length = message.len();
+        if length > SIZE {
+            length = SIZE;
         }
 
-        if self.index + message.len() > SIZE {
-            let removing = self.index + message.len() - SIZE;
+        if self.index + length > SIZE {
+            let removing = self.index + length - SIZE;
             self.index -= removing;
-            Logger::copy_to_start(&mut self.buffer, message.len());
+            Logger::copy_to_start(&mut self.buffer, length);
         }
 
-        let length = message.len();
         Logger::copy(&mut self.buffer, message, self.index);
         self.index += length;
         self.updated = true;
     }
 
-    fn copy(vec: &mut [u8; SIZE], mut target: String, index: usize) {
+    fn copy(vec: &mut [u8; SIZE], target: &String, index: usize) {
         let dest = vec.as_mut_ptr();
 
         unsafe {
-            let src = target.as_bytes_mut().as_mut_ptr();
+            let src = target.as_bytes().as_ptr();
 
             ptr::copy_nonoverlapping(src, dest.offset(index as isize),
                                      target.len())
@@ -62,7 +62,7 @@ mod tests {
     fn test_copy() {
         let mut original = [0 as u8; SIZE];
         let target = String::from_utf8(Vec::from([1 as u8; SIZE])).unwrap();
-        Logger::copy(&mut original, target, 40);
+        Logger::copy(&mut original, &target, 40);
 
         for i in 0..40 {
             assert_eq!(0, original[i]);

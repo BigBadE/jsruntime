@@ -96,10 +96,9 @@ fn run(path: &String, memory_map: String, modules: Vec<&str>) -> Option<Error> {
     return match fs::read_to_string(Path::new(path)) {
         Ok(source) => {
             match runner.run(source.as_bytes()) {
-                Err(error) => runner.log(error.to_string()),
-                _ => {}
+                Err(error) => Option::Some(Error::from(error)),
+                _ => Option::None
             }
-            Option::None
         }
         Err(error) => Option::Some(Error::msg(format!("{} for {}", error, path)))
     };
