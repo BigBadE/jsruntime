@@ -5,7 +5,7 @@ pub const SIZE: usize = 0xF00;
 pub struct Logger {
     pub buffer: Box<[u8; SIZE]>,
     pub index: usize,
-    pub updated: bool
+    pub updated: bool,
 }
 
 impl Logger {
@@ -13,11 +13,11 @@ impl Logger {
         Logger {
             buffer: Box::new([0; SIZE]),
             index: 0,
-            updated: false
+            updated: false,
         }
     }
 
-    pub fn log(&mut self, message: &String) {
+    pub fn log(&mut self, message: &str) {
         let mut length = message.len();
         if length > SIZE {
             length = SIZE;
@@ -34,7 +34,7 @@ impl Logger {
         self.updated = true;
     }
 
-    fn copy(vec: &mut [u8; SIZE], target: &String, index: usize) {
+    fn copy(vec: &mut [u8; SIZE], target: &str, index: usize) {
         let dest = vec.as_mut_ptr();
 
         unsafe {
@@ -49,7 +49,7 @@ impl Logger {
         let src = vec.as_mut_ptr();
 
         unsafe {
-            ptr::copy(src.clone().offset(length as isize), src, SIZE-length)
+            ptr::copy(src.clone().offset(length as isize), src, SIZE - length)
         }
     }
 }
@@ -77,7 +77,7 @@ mod tests {
         let mut original = [0 as u8; SIZE];
 
         let mut val = 0;
-        for i in SIZE-2000..SIZE {
+        for i in SIZE - 2000..SIZE {
             original[i] = val;
             if val == 255 {
                 val = 0;

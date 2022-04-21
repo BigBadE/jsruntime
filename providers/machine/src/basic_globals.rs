@@ -32,23 +32,21 @@ fn sync<'s>(scope: &mut v8::HandleScope<'s>,
 
         let memory = &mut state.shared_memory;
 
-
         //Write output to shmem
         ptr::copy_nonoverlapping(
             pointer, memory.as_ptr().offset((cmd_offset + 130) as isize),
             runner::logger::SIZE);
 
-        let sync = memory.as_slice_mut();
-
-        if updated && sync[cmd_offset + 129] & 0x1 == 0 {
-            sync[cmd_offset + 129] ^= 0x1;
+        if updated && memory.as_slice()[cmd_offset + 129] & 0x1 == 0 {
+            memory.as_slice_mut()[cmd_offset + 129] ^= 0x1;
         }
 
-        while sync[offset] & 0x1 == 0 {
+        while memory.as_slice()[offset] & 0x1 == 0 {
             //Loop until it sync's
             thread::sleep(Duration::new(0, 1));
         }
-        sync[offset] ^= 0x1;
+
+        memory.as_slice_mut()[offset] ^= 0x1;
     }
 }
 

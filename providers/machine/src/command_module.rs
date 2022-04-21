@@ -1,6 +1,5 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::ptr;
 use std::rc::Rc;
 
 use runner::imports::Provider;
@@ -42,13 +41,16 @@ fn run_cmd<'s>(scope: &mut v8::HandleScope<'s>,
 
         let size = slice[offset] as usize;
 
+        if size > 128 {
+            panic!("Size of cmd is bigger than expected");
+        }
+
         let mut buffer = Vec::new();
         buffer.resize(size, 0);
         buffer.copy_from_slice(&slice[offset + 1.. offset + 1 + size]);
-        ptr::copy_nonoverlapping([0; 128].as_mut_ptr(), memory.as_ptr(), 128);
 
         command = String::from_utf8(buffer).unwrap();
-        state.output.log(&command);
+        state.output.log(&format!("{}\n", &command));
     }
 
     let source = v8::String::new_from_utf8(try_catch,
