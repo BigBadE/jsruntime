@@ -41,14 +41,22 @@ fn sync<'s>(scope: &mut v8::HandleScope<'s>,
             memory.as_slice_mut()[cmd_offset + 129] ^= 0x1;
         }
 
+        //TODO sync bugs
         while memory.as_slice()[offset] & 0x1 == 0 {
             //Loop until it sync's
             thread::sleep(Duration::new(0, 1));
         }
 
-        //TODO this line is messing it up
         memory.as_slice_mut()[offset] ^= 0x1;
     }
+
+    /*
+Sync: Fail Most of the time
+No Sync: Pass
+C# Sync: Fail Always
+100ms Delay: Fail Always
+No Delay: Fail Always
+     */
 }
 
 fn print<'s>(scope: &mut v8::HandleScope<'s>,

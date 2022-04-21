@@ -32,14 +32,13 @@ fn run_cmd<'s>(scope: &mut v8::HandleScope<'s>,
         let mut state = RefCell::borrow_mut(&state);
 
         let offset = state.get_offset("Command");
-        let memory = &mut state.shared_memory;
-        let slice = memory.as_slice_mut();
-        if slice[offset + 129] & 0x2 == 0 {
+
+        if state.shared_memory.as_slice()[offset + 129] & 0x2 == 0 {
             return;
         }
-        slice[offset + 129] ^= 0x2;
+        state.shared_memory.as_slice_mut()[offset + 129] ^= 0x2;
 
-        let size = slice[offset] as usize;
+        let size = state.shared_memory.as_slice()[offset] as usize;
 
         if size > 128 {
             panic!("Size of cmd is bigger than expected");
@@ -47,7 +46,7 @@ fn run_cmd<'s>(scope: &mut v8::HandleScope<'s>,
 
         let mut buffer = Vec::new();
         buffer.resize(size, 0);
-        buffer.copy_from_slice(&slice[offset + 1.. offset + 1 + size]);
+        buffer.copy_from_slice(&state.shared_memory.as_slice()[offset + 1.. offset + 1 + size]);
 
         command = String::from_utf8(buffer).unwrap();
         if command.starts_with("$(") {
