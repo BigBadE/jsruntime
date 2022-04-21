@@ -50,7 +50,11 @@ fn run_cmd<'s>(scope: &mut v8::HandleScope<'s>,
         buffer.copy_from_slice(&slice[offset + 1.. offset + 1 + size]);
 
         command = String::from_utf8(buffer).unwrap();
-        state.output.log(&format!("{}\n", &command));
+        if command.starts_with("$(") {
+            state.output.log(&format!("\n> {}\n\n", &command[2..command.len()-1]));
+        } else {
+            state.output.log(&format!("\n$ {}\n\n", &command));
+        }
     }
 
     let source = v8::String::new_from_utf8(try_catch,

@@ -46,6 +46,7 @@ fn sync<'s>(scope: &mut v8::HandleScope<'s>,
             thread::sleep(Duration::new(0, 1));
         }
 
+        //TODO this line is messing it up
         memory.as_slice_mut()[offset] ^= 0x1;
     }
 }
