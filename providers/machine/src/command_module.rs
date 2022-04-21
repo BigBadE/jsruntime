@@ -33,12 +33,18 @@ fn run_cmd<'s>(scope: &mut v8::HandleScope<'s>,
         let mut state = RefCell::borrow_mut(&state);
 
         let offset = state.get_offset("Command");
-        let memory = &state.shared_memory;
-        let size = memory.as_slice()[offset] as usize;
+        let memory = &mut state.shared_memory;
+        let slice = memory.as_slice_mut();
+        if slice[offset + 129] & 0x2 == 0 {
+            return;
+        }
+        slice[offset + 129] ^= 0x2;
+
+        let size = slice[offset] as usize;
 
         let mut buffer = Vec::new();
         buffer.resize(size, 0);
-        buffer.copy_from_slice(&memory.as_slice()[offset + 1.. offset + 1 + size]);
+        buffer.copy_from_slice(&slice[offset + 1.. offset + 1 + size]);
         ptr::copy_nonoverlapping([0; 128].as_mut_ptr(), memory.as_ptr(), 128);
 
         command = String::from_utf8(buffer).unwrap();

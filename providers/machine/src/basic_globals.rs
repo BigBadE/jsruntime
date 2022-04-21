@@ -40,15 +40,15 @@ fn sync<'s>(scope: &mut v8::HandleScope<'s>,
 
         let sync = memory.as_slice_mut();
 
-        if updated {
-            sync[cmd_offset + 129] = 1;
+        if updated && sync[cmd_offset + 129] & 0x1 == 0 {
+            sync[cmd_offset + 129] ^= 0x1;
         }
 
-        while sync[offset] != 1 {
+        while sync[offset] & 0x1 == 0 {
             //Loop until it sync's
             thread::sleep(Duration::new(0, 1));
         }
-        sync[offset] = 0;
+        sync[offset] ^= 0x1;
     }
 }
 
