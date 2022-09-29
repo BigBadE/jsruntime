@@ -1,13 +1,9 @@
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::rc::Rc;
 use anyhow::Error;
-use shared_memory::Shmem;
-use v8::{CreateParams, Object};
+use v8::CreateParams;
 use util::error::JsError;
 use util::fmt_error::PrettyJsError;
-use crate::imports::Provider;
-use crate::logger::Logger;
 use crate::state::JSRunnerState;
 
 static INITIALIZED: bool = false;
@@ -17,9 +13,7 @@ pub struct JSRunner {
 }
 
 impl JSRunner {
-    pub fn new(platform: Option<v8::SharedRef<v8::Platform>>, params: CreateParams,
-               providers: Vec<Provider>, shared_memory: Shmem,
-               modules: HashMap<String, (usize, usize)>) -> Self {
+    pub fn new(platform: Option<v8::SharedRef<v8::Platform>>, params: CreateParams, logger: i8) -> Self {
         if !INITIALIZED {
             JSRunner::initialize(platform)
         }
@@ -32,54 +26,14 @@ impl JSRunner {
 
             let context = v8::Context::new(scope);
 
-            let global = context.global(scope);
-
             let context_scope = &mut v8::ContextScope::new(scope, context);
 
-            for provider in providers {
-                match provider.objects {
-                    Some(objects) => {
-                        for (name, functions) in objects {
-                            let global_key =
-                                v8::String::new(context_scope, name).unwrap().into();
-
-                            let object: v8::Local<Object> = match global.get(context_scope, global_key) {
-                                Some(found) => {
-                                    match found.try_into() {
-                                        Ok(found) => found,
-                                        Err(_error) => Object::new(context_scope)
-                                    }
-                                },
-                                None => Object::new(context_scope)
-                            };
-
-                            for (func_name, function) in functions {
-                                set_func(context_scope, object, func_name, function);
-                            }
-
-                            global.set(context_scope, global_key,
-                                       object.into());
-                        }
-                    }
-                    _ => {}
-                }
-                match provider.functions {
-                    Some(functions) => {
-                        for (name, function) in functions {
-                            set_func(context_scope, global, name, function)
-                        }
-                    }
-                    _ => {}
-                }
-            }
             global_context = v8::Global::new(context_scope, context)
         }
 
         isolate.set_slot(Rc::new(RefCell::new(JSRunnerState {
             global_context,
-            shared_memory,
-            modules,
-            output: Logger::new()
+            output: logger
         })));
 
         return JSRunner {
@@ -162,8 +116,10 @@ impl JSRunner {
 
     pub fn log(self, message: &String) {
         let state = JSRunner::get_state(&self.isolate);
-        let mut state = RefCell::borrow_mut(&state);
-        state.output.log(message);
+        let state = RefCell::borrow_mut(&state);
+        let function = state.output as *const ();
+        let function: fn(&String) -> i32 = unsafe { std::mem::transmute(function) };
+        (function)(message);
     }
 }
 

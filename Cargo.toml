@@ -3,6 +3,5 @@ resolver = "2"
 members = [
     "runner",
     "jsruntime",
-    "util",
-    "providers/machine"
+    "util"
 ]
