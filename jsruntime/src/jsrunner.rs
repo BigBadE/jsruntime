@@ -4,7 +4,7 @@ use anyhow::Error;
 use runner::runner::JSRunner;
 
 #[no_mangle]
-pub fn serenity_run(path: &String, logger: &i8) -> &'static str {
+pub fn serenity_run() -> &'static str {
     return "Run success!";
     /*
     let function = logger.clone() as *const ();
