@@ -1,18 +1,11 @@
-use std::{fs, io};
+use std::{io};
 use std::fs::File;
 use std::io::Write;
-use std::path::Path;
-use anyhow::Error;
-use runner::runner::JSRunner;
 
 #[no_mangle]
-pub fn serenity_run(input: &str, logger: &i8) {
-    let mut file = File::create("C:\\Unity\\TerminalEmu\\Serenity\\Test.txt").unwrap();
-
-    file.write("1".as_bytes()).unwrap();
-    let function: fn(&str) = unsafe { std::mem::transmute(function) };
-    file.write("2".as_bytes()).unwrap();
-    (function)("Testing");
+pub extern "C" fn serenity_run(logger: *const i8) {
+    let function: fn() = unsafe { std::mem::transmute(logger) };
+    (function)();
     /*
     let params = v8::Isolate::create_params()
         .array_buffer_allocator(v8::new_default_allocator())
