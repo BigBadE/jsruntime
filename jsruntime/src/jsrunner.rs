@@ -1,12 +1,24 @@
 use std::{io};
 use std::fs::File;
 use std::io::Write;
+use runner::runner::JSRunner;
 
 #[no_mangle]
-pub extern "C" fn serenity_run(logger: *const i8) {
+pub extern "C" fn serenity_init(functions_ptr: *const u32, identifiers_ptr: *const u32, functions_len: usize) {
+    let identifiers = unsafe { std::slice::from_raw_parts(identifiers_ptr, functions_len) };
+    let functions = unsafe { std::slice::from_raw_parts(functions_ptr, functions_len) };
+
+}
+
+#[no_mangle]
+pub extern "C" fn serenity_run(path_ptr: *const u32, path_len: usize, logger: *const u32) {
+    let path = unsafe { (std::slice::from_raw_parts(path_ptr, path_len)) };
+
+    /*
     let function: fn() = unsafe { std::mem::transmute(logger) };
     (function)();
-    /*
+    */
+
     let params = v8::Isolate::create_params()
         .array_buffer_allocator(v8::new_default_allocator())
         .allow_atomics_wait(false)
@@ -22,5 +34,5 @@ pub extern "C" fn serenity_run(logger: *const i8) {
             }
         }
         Err(error) => Option::Some(Error::msg(format!("{} for {}", error, path)))
-    };*/
+    };
 }
