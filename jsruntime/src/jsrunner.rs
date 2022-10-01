@@ -1,16 +1,19 @@
-use std::fs;
+use std::{fs, io};
+use std::fs::File;
+use std::io::Write;
 use std::path::Path;
 use anyhow::Error;
 use runner::runner::JSRunner;
 
 #[no_mangle]
-pub fn serenity_run() -> &'static str {
-    return "Run success!";
-    /*
-    let function = logger.clone() as *const ();
-    let function: fn(&str) -> i32 = unsafe { std::mem::transmute(function) };
-    (function)("Testing");
+pub fn serenity_run(input: &str, logger: &i8) {
+    let mut file = File::create("C:\\Unity\\TerminalEmu\\Serenity\\Test.txt").unwrap();
 
+    file.write("1".as_bytes()).unwrap();
+    let function: fn(&str) = unsafe { std::mem::transmute(function) };
+    file.write("2".as_bytes()).unwrap();
+    (function)("Testing");
+    /*
     let params = v8::Isolate::create_params()
         .array_buffer_allocator(v8::new_default_allocator())
         .allow_atomics_wait(false)

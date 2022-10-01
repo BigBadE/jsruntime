@@ -11,7 +11,7 @@ description = "A JavaScript runtime made for a game"
 [lib]
 path = "src/jsrunner.rs"
 name = "serenity" # the name of the library that will be generated
-crate-type = ["dylib"]
+crate-type = ["cdylib"]
 
 [dependencies]
 runner = { version = "0.1.0", path="../runner" }
