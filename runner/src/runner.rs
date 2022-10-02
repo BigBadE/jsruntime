@@ -54,16 +54,16 @@ impl JSRunner {
             Some(script) => script,
             None => {
                 let exception = try_catch.exception().unwrap();
-                return Result::Err(
+                return Err(
                     PrettyJsError::create(JsError::from_v8_exception(try_catch, exception)));
             }
         };
 
         match script.run(try_catch) {
-            Some(result) => Result::Ok(result),
+            Some(result) => Ok(result),
             None => {
                 let exception = try_catch.exception().unwrap();
-                return Result::Err(PrettyJsError::create(
+                return Err(PrettyJsError::create(
                     JsError::from_v8_exception(try_catch, exception)));
             }
         }
