@@ -13,7 +13,7 @@ pub struct JSRunner {
 }
 
 impl JSRunner {
-    pub fn new(platform: Option<v8::SharedRef<v8::Platform>>, params: CreateParams, logger: i8) -> Self {
+    pub fn new(platform: Option<v8::SharedRef<v8::Platform>>, params: CreateParams, logger: &'static dyn Fn(&str)) -> Self {
         if !INITIALIZED {
             JSRunner::initialize(platform)
         }
@@ -117,9 +117,7 @@ impl JSRunner {
     pub fn log(self, message: &String) {
         let state = JSRunner::get_state(&self.isolate);
         let state = RefCell::borrow_mut(&state);
-        let function = state.output as *const ();
-        let function: fn(&String) -> i32 = unsafe { std::mem::transmute(function) };
-        (function)(message);
+        (state.output)(message);
     }
 }
 

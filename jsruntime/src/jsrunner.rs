@@ -1,4 +1,7 @@
 use std::fmt::Error;
+use std::fs;
+use std::path::Path;
+use runner::runner::JSRunner;
 use crate::externalfunctions::ExternalFunctions;
 
 mod externalfunctions;
@@ -14,26 +17,25 @@ pub extern "C" fn serenity_run(external_functions: ExternalFunctions, logger: *c
     }
 }
 
-fn serenity_run_internal(external_functions: ExternalFunctions, logger: &dyn Fn(&str)) -> Result<bool, Error> {
+fn serenity_run_internal(external_functions: ExternalFunctions, logger: &dyn Fn(&str)) -> Option<anyhow::Error> {
 
     let printing = external_functions.get_path()?;
     logger(printing.as_str());
 
-    Ok(true)
-    /*let params = v8::Isolate::create_params()
+    let params = v8::Isolate::create_params()
         .array_buffer_allocator(v8::new_default_allocator())
         .allow_atomics_wait(false)
         .heap_limits(0, 3 * 1024 * 1024);
 
-    let mut runner = JSRunner::new(Option::None, params, logger.clone());
+    let mut runner = JSRunner::new(None, params, logger);
 
     return match fs::read_to_string(Path::new(path)) {
         Ok(source) => {
             match runner.run(source.as_bytes()) {
-                Err(error) => Option::Some(Error::from(error)),
-                _ => Option::None
+                Err(error) => Some(Error:from(error)),
+                _ => None
             }
         }
-        Err(error) => Option::Some(Error::msg(format!("{} for {}", error, path)))
-    };*/
+        Err(error) => Some(Error::msg(format!("{} for {}", error, path)))
+    };
 }
