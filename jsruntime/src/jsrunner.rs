@@ -9,15 +9,19 @@ mod externalfunctions;
 
 #[no_mangle]
 pub extern "C" fn serenity_run(external_functions: ExternalFunctions, logger: *const u32) {
+    print(logger, "Starting Serenity");
     match serenity_run_internal(external_functions, logger) {
         Err(error) => {
-            let function: fn(*const u32, usize) = unsafe { std::mem::transmute(logger) };
             let string_error = error.to_string();
-            let string_error = string_error.as_str();
-            (function)(string_error as *const str as *const u32, string_error.len());
+            print(logger, string_error.as_str())
         }
         _ => {}
     }
+}
+
+fn print(logger: *const u32, printing: &str) {
+    let function: fn(*const u32, usize) = unsafe { std::mem::transmute(logger) };
+    (function)(printing as *const str as *const u32, printing.len());
 }
 
 fn serenity_run_internal(external_functions: ExternalFunctions, logger: *const u32) -> Result<bool, Error> {
