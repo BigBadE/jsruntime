@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::marker::PhantomData;
 use std::rc::Rc;
 use anyhow::Error;
 use v8::CreateParams;
@@ -9,11 +10,11 @@ use crate::state::JSRunnerState;
 static INITIALIZED: bool = false;
 
 pub struct JSRunner {
-    isolate: v8::OwnedIsolate,
+    isolate: v8::OwnedIsolate
 }
 
 impl JSRunner {
-    pub fn new(platform: Option<v8::SharedRef<v8::Platform>>, params: CreateParams, logger: &'static dyn Fn(&str)) -> Self {
+    pub fn new(platform: Option<v8::SharedRef<v8::Platform>>, params: CreateParams, logger: *const u32) -> Self {
         if !INITIALIZED {
             JSRunner::initialize(platform)
         }
@@ -117,7 +118,8 @@ impl JSRunner {
     pub fn log(self, message: &String) {
         let state = JSRunner::get_state(&self.isolate);
         let state = RefCell::borrow_mut(&state);
-        (state.output)(message);
+        let function: fn(*const u32, usize) = unsafe { std::mem::transmute(state.output) };
+        (function)(message.as_str() as *const str as *const u32, message.len());
     }
 }
 
