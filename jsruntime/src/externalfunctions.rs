@@ -1,13 +1,14 @@
 use std::fmt::Error;
 
+#[repr(C)]
 pub struct ExternalFunctions {
     pub function_keys: *const u32,
     pub function_values: *const u32,
-    pub functions_length: usize,
+    pub functions_length: i32,
     pub objects: *const u32,
-    pub object_lengths: usize,
+    pub object_lengths: i32,
     pub path: *const u32,
-    pub path_length: usize,
+    pub path_length: i32,
 }
 
 impl ExternalFunctions {

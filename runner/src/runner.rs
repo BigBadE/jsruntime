@@ -1,5 +1,4 @@
 use std::cell::RefCell;
-use std::marker::PhantomData;
 use std::rc::Rc;
 use anyhow::Error;
 use v8::CreateParams;
@@ -15,9 +14,9 @@ pub struct JSRunner {
 
 impl JSRunner {
     pub fn new(platform: Option<v8::SharedRef<v8::Platform>>, params: CreateParams, logger: *const u32) -> Self {
-        if !INITIALIZED {
+        /*if !&INITIALIZED {
             JSRunner::initialize(platform)
-        }
+        }*/
 
         let mut isolate = v8::Isolate::new(params);
 
@@ -51,7 +50,7 @@ impl JSRunner {
 
         let try_catch = &mut v8::TryCatch::new(handle_scope);
 
-        let script = match v8::Script::compile(try_catch, source, Option::None) {
+        let script = match v8::Script::compile(try_catch, source, None) {
             Some(script) => script,
             None => {
                 let exception = try_catch.exception().unwrap();
@@ -59,6 +58,7 @@ impl JSRunner {
                     PrettyJsError::create(JsError::from_v8_exception(try_catch, exception)));
             }
         };
+
 
         match script.run(try_catch) {
             Some(result) => Ok(result),

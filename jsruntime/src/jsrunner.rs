@@ -1,4 +1,3 @@
-
 use std::fs;
 use std::path::Path;
 use anyhow::Error;
@@ -12,8 +11,11 @@ pub extern "C" fn serenity_run(external_functions: ExternalFunctions, logger: *c
     print(logger, "Starting Serenity");
     match serenity_run_internal(external_functions, logger) {
         Err(error) => {
-            let string_error = error.to_string();
-            print(logger, string_error.as_str())
+            let maybe_error = error.chain().last();
+            match maybe_error {
+                Some(error) => print(logger, error.to_string().as_str()),
+                None => print(logger, "Error with no error given!")
+            }
         }
         _ => {}
     }
@@ -27,7 +29,7 @@ fn print(logger: *const u32, printing: &str) {
 fn serenity_run_internal(external_functions: ExternalFunctions, logger: *const u32) -> Result<bool, Error> {
     let printing = external_functions.get_path()?;
 
-    let params = v8::Isolate::create_params()
+    /*let params = v8::Isolate::create_params()
         .array_buffer_allocator(v8::new_default_allocator())
         .allow_atomics_wait(false)
         .heap_limits(0, 3 * 1024 * 1024);
@@ -42,5 +44,6 @@ fn serenity_run_internal(external_functions: ExternalFunctions, logger: *const u
             }
         }
         Err(error) => Err(Error::msg(format!("{} for {}", error, printing)))
-    };
+    };*/
+    Ok(true)
 }
