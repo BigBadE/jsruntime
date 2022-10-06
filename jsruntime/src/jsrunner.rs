@@ -1,15 +1,13 @@
-use std::fs;
-use std::path::Path;
 use anyhow::Error;
-use runner::runner::JSRunner;
-use crate::externalfunctions::ExternalFunctions;
 
 mod externalfunctions;
 
 #[no_mangle]
-pub extern "C" fn serenity_run(external_functions: ExternalFunctions, logger: *const u32) {
-    print(logger, "Starting Serenity");
-    match serenity_run_internal(external_functions, logger) {
+pub extern "C" fn serenity_run(/*external_functions: ExternalFunctions, */logger: *const u32) {
+
+    /*print(logger, "Starting Serenity");
+
+    match serenity_run_internal(/*external_functions, */logger) {
         Err(error) => {
             let maybe_error = error.chain().last();
             match maybe_error {
@@ -18,7 +16,7 @@ pub extern "C" fn serenity_run(external_functions: ExternalFunctions, logger: *c
             }
         }
         _ => {}
-    }
+    }*/
 }
 
 fn print(logger: *const u32, printing: &str) {
@@ -26,10 +24,10 @@ fn print(logger: *const u32, printing: &str) {
     (function)(printing as *const str as *const u32, printing.len());
 }
 
-fn serenity_run_internal(external_functions: ExternalFunctions, logger: *const u32) -> Result<bool, Error> {
-    let printing = external_functions.get_path()?;
+fn serenity_run_internal(/*external_functions: ExternalFunctions, */logger: *const u32) -> Result<bool, Error> {
+    /*let printing = external_functions.get_path()?;
 
-    /*let params = v8::Isolate::create_params()
+    let params = v8::Isolate::create_params()
         .array_buffer_allocator(v8::new_default_allocator())
         .allow_atomics_wait(false)
         .heap_limits(0, 3 * 1024 * 1024);
