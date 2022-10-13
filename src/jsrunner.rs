@@ -1,22 +1,30 @@
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::sync::Mutex;
 use anyhow::Error;
-use v8::CreateParams;
-use util::error::JsError;
-use util::fmt_error::PrettyJsError;
+use lazy_static::lazy_static;
+use crate::{ExternalFunctions, log};
 use crate::state::JSRunnerState;
 
-static INITIALIZED: bool = false;
+lazy_static! {
+    static ref INITIALIZED: Mutex<bool> = Mutex::new(false);
+}
 
 pub struct JSRunner {
     isolate: v8::OwnedIsolate
 }
 
 impl JSRunner {
-    pub fn new(platform: Option<v8::SharedRef<v8::Platform>>, params: CreateParams, logger: *const u32) -> Self {
-        /*if !&INITIALIZED {
-            JSRunner::initialize(platform)
-        }*/
+    pub fn new(platform: Option<v8::SharedRef<v8::Platform>>, params: v8::CreateParams,
+               externals: ExternalFunctions, logger: *const ()) -> Self {
+        {
+            log(logger, "Initializing");
+            let mut init = INITIALIZED.lock().unwrap();
+            if *init == false {
+                JSRunner::initialize(platform);
+                *init = true;
+            }
+        }
 
         let mut isolate = v8::Isolate::new(params);
 
@@ -54,18 +62,17 @@ impl JSRunner {
             Some(script) => script,
             None => {
                 let exception = try_catch.exception().unwrap();
-                return Err(
-                    PrettyJsError::create(JsError::from_v8_exception(try_catch, exception)));
+                let scope = &mut v8::HandleScope::new(try_catch);
+                return Result::Err(Error::msg(v8::Exception::create_message(scope, exception).get(scope).to_rust_string_lossy(scope)));
             }
         };
 
-
         match script.run(try_catch) {
-            Some(result) => Ok(result),
+            Some(result) => Result::Ok(result),
             None => {
                 let exception = try_catch.exception().unwrap();
-                return Err(PrettyJsError::create(
-                    JsError::from_v8_exception(try_catch, exception)));
+                let scope = &mut v8::HandleScope::new(try_catch);
+                return Result::Err(Error::msg(v8::Exception::create_message(scope, exception).get(scope).to_rust_string_lossy(scope)))
             }
         }
     }
@@ -121,16 +128,4 @@ impl JSRunner {
         let function: fn(*const u32, usize) = unsafe { std::mem::transmute(state.output) };
         (function)(message.as_str() as *const str as *const u32, message.len());
     }
-}
-
-pub fn set_func(
-    scope: &mut v8::HandleScope<'_>,
-    obj: v8::Local<v8::Object>,
-    name: &str,
-    callback: v8::FunctionCallback,
-) {
-    let key = v8::String::new(scope, name).unwrap();
-    let val = v8::Function::builder_raw(callback).build(scope).unwrap();
-    val.set_name(key);
-    obj.set(scope, key.into(), val.into());
 }

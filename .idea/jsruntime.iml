@@ -11,6 +11,7 @@
       <sourceFolder url="file://$MODULE_DIR$/serde_v8/tests" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/util/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/providers/machine/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />
