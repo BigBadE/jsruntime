@@ -15,9 +15,10 @@ pub extern "C" fn serenity_run(externals: ExternalFunctions, logger: *const ()) 
     match run_internal(externals, logger) {
         Err(error) =>
             log(logger, format!("{}", error).as_str()),
-        Ok(result) => log(logger, "Passed!")
+        _ => {}
     }
 }
+
 
 fn run_internal(externals: ExternalFunctions, logger: *const ()) -> Result<bool, Error> {
     let params = v8::Isolate::create_params()
@@ -25,17 +26,14 @@ fn run_internal(externals: ExternalFunctions, logger: *const ()) -> Result<bool,
         .allow_atomics_wait(false)
         .heap_limits(0, 3 * 1024 * 1024);
 
-    let mut runner = JSRunner::new(Option::None, params, externals, logger);
-    log(logger, "Made runner, running");
+    let mut runner = JSRunner::new(None, params, externals.clone(), logger)?;
 
     let path = externals.get_path()?;
 
     return match fs::read_to_string(Path::new(&path)) {
         Ok(source) => {
-            match runner.run(source.as_bytes()) {
-                Err(error) => Err(Error::from(error)),
-                _ => Ok(true)
-            }
+            runner.run(source.as_bytes())?;
+            Ok(true)
         }
         Err(error) => Err(Error::msg(format!("Error: {}", error)))
     };
