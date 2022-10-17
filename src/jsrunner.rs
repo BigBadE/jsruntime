@@ -19,13 +19,14 @@ impl JSRunner {
     pub fn new(platform: Option<v8::SharedRef<v8::Platform>>, params: v8::CreateParams,
                externals: ExternalFunctions, logger: *const ()) -> Result<Self, Error> {
         {
-            log(logger, "Initializing Serenity");
-            let mut init = INITIALIZED.lock().unwrap();
+            let mut init = INITIALIZED.lock().expect("Couldn't unwrap muted");
+            log(logger, format!("Initializing Serenity with mutex {}", init).as_str());
             if *init == false {
                 JSRunner::initialize(platform);
                 *init = true;
             }
         }
+
 
         let mut isolate = v8::Isolate::new(params);
 
@@ -39,9 +40,11 @@ impl JSRunner {
 
             let context_scope = &mut v8::ContextScope::new(scope, context);
 
-            let functions = externals.get_functions()?;
+            let functions: HashMap<String, *const u32> = /*externals.get_functions()?*/ HashMap::new();
+            log(logger, format!("{}", functions.len()).as_str());
+
             let mut object_functions: HashMap<String, (String, *const u32)> = HashMap::new();
-            let objects = externals.get_objects()?;
+            let objects: Vec<String> = /*externals.get_objects()?*/ Vec::new();
 
             for (name, pointer) in functions {
                 if name.contains('.') {

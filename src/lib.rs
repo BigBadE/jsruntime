@@ -28,15 +28,16 @@ fn run_internal(externals: ExternalFunctions, logger: *const ()) -> Result<bool,
 
     let mut runner = JSRunner::new(None, params, externals.clone(), logger)?;
 
-    let path = externals.get_path()?;
+    //let path = externals.get_path()?;
 
-    return match fs::read_to_string(Path::new(&path)) {
-        Ok(source) => {
-            runner.run(source.as_bytes())?;
+
+    return /*match fs::read_to_string(Path::new(&path)) {
+        Ok(source) => {*/
+            Ok(runner.run("1+1=2".as_bytes())?.is_array());/*
             Ok(true)
         }
         Err(error) => Err(Error::msg(format!("Error: {}", error)))
-    };
+    };*/
 }
 
 fn log(logger: *const (), logging: &str) {
