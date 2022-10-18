@@ -11,7 +11,15 @@ use crate::externalfunctions::ExternalFunctions;
 use crate::jsrunner::JSRunner;
 
 #[no_mangle]
-pub extern "C" fn serenity_run(externals: ExternalFunctions, logger: *const ()) {
+pub extern "C" fn serenity_run(mut function_keys: *const u16, function_values: *const *const (),
+                               function_sizes: *const u16, functions_length: i32,
+                               mut objects: *const u16, object_sizes: *const u16, object_length: i32,
+                               path: *const u16, path_length: i32, logger: *const ()) {
+    let externals = unsafe {
+        ExternalFunctions::new(function_keys, function_values, function_sizes, functions_length,
+                               objects, object_sizes, object_length, path, path_length)?
+    };
+
     match run_internal(externals, logger) {
         Err(error) =>
             log(logger, format!("{}", error).as_str()),

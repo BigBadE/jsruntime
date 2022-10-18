@@ -1,40 +1,49 @@
 use std::collections::HashMap;
-use std::fmt::Error;
-use std::ops::Add;
-use std::ptr;
+use std::slice;
+use anyhow::Error;
 
 #[repr(C, packed(1))]
 pub struct ExternalFunctions {
-    pub function_keys: *const u32,
-    pub function_values: *const u32,
-    pub functions_length: i32,
-    pub objects: *const u32,
-    pub object_lengths: i32,
-    pub path: *const u32,
-    pub path_length: i32,
+    pub function: HashMap<String, *const u32>,
+    pub objects: Vec<String>,
+    pub path: String
 }
 
 impl ExternalFunctions {
-    pub fn get_path(self) -> Result<String, Error> {
-        let parts: &[u16] = unsafe { std::slice::from_raw_parts(self.path as *const _, self.path_length as usize) };
-
-        return match String::from_utf16(parts) {
-            Ok(result) => Ok(result),
-            Err(_error) => Err(Error::default())
+    pub unsafe fn new(mut function_keys: *const u16, function_values: *const *const (),
+               function_sizes: *const u16, functions_length: i32,
+               mut objects: *const u16, object_sizes: *const u16, object_length: i32,
+               path: *const u16, path_length: i32) -> Result<Self, Error> {
+        let mut created = ExternalFunctions {
+            function: HashMap::with_capacity(functions_length as usize),
+            objects: Vec::with_capacity(object_length as usize),
+            path: String::new()
         };
-    }
 
-    pub fn get_functions(self) -> HashMap<String, *const u32> {
-        let map = HashMap::with_capacity(self.functions_length as usize);
-        let mut current = self.function_keys;
-        for i in 0..self.functions_length {
-            unsafe {
-                let size = ptr::read(current);
-                current.add(8);
-                let parts: &[u16] = std::slice::from_raw_parts(current as *const _, self.path_length as usize);
-                current.add((size * 4) as usize);
-            }
+        created.path = get_string(slice::from_raw_parts(path, path_length as usize))?;
+
+        let sizes = slice::from_raw_parts(object_sizes, object_length as usize);
+        for i in 0..object_length as usize {
+            let size = sizes[i] as usize;
+            created.objects.push(get_string(slice::from_raw_parts(objects, size))?);
+            objects = objects.add((size * 4) as usize);
         }
-        return map;
+
+        let sizes = slice::from_raw_parts(function_sizes, functions_length as usize);
+        let values = slice::from_raw_parts(function_values, functions_length as usize);
+        for i in 0..functions_length as usize {
+            let size = sizes[i] as usize;
+            created.function.insert(get_string(slice::from_raw_parts(function_keys, size))?, values[i]);
+            function_keys = function_keys.add((size * 4) as usize);
+        };
+
+        return Ok(created);
     }
+}
+
+fn get_string(input: &[u16]) -> Result<String, Error> {
+    return match String::from_utf16(input) {
+        Ok(str) => Ok(str),
+        Err(error) => Err(Error::msg(error.to_string()))
+    };
 }
