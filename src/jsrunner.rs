@@ -17,7 +17,7 @@ pub struct JSRunner {
 
 impl JSRunner {
     pub fn new(platform: Option<v8::SharedRef<v8::Platform>>, params: v8::CreateParams,
-               externals: ExternalFunctions, logger: *const ()) -> Result<Self, Error> {
+               externals: &ExternalFunctions, logger: *const ()) -> Result<Self, Error> {
         {
             let mut init = INITIALIZED.lock().expect("Couldn't unwrap muted");
             log(logger, format!("Initializing Serenity with mutex {}", init).as_str());
@@ -40,18 +40,18 @@ impl JSRunner {
 
             let context_scope = &mut v8::ContextScope::new(scope, context);
 
-            let functions: HashMap<String, *const u32> = /*externals.get_functions()?*/ HashMap::new();
-            log(logger, format!("{}", functions.len()).as_str());
+            let functions = &externals.function;
+            let objects = &externals.objects;
 
-            let mut object_functions: HashMap<String, (String, *const u32)> = HashMap::new();
-            let objects: Vec<String> = /*externals.get_objects()?*/ Vec::new();
+            let mut object_functions: HashMap<String, (String, *const ())> = HashMap::new();
+
 
             for (name, pointer) in functions {
                 if name.contains('.') {
                     let split = name.find('.').unwrap();
-                    object_functions.insert(name[0..split].to_string(), (name[split+1..].to_string(), pointer));
+                    object_functions.insert(name[0..split].to_string(), (name[split+1..].to_string(), *pointer));
                 } else {
-                    set_func(context_scope, global, name.as_str())
+                    set_func(logger, context_scope, global, name.as_str())
                 }
             }
 
@@ -70,7 +70,7 @@ impl JSRunner {
                 };
 
                 for (func_name, _function) in object_functions.get(object_name.as_str()) {
-                    set_func(context_scope, object, func_name);
+                    set_func(logger, context_scope, object, func_name);
                 }
 
                 global.set(context_scope, global_key,
@@ -122,9 +122,9 @@ impl JSRunner {
     fn initialize(platform: Option<v8::SharedRef<v8::Platform>>) {
         // Include 10MB ICU data file.
         #[repr(C, align(16))]
-        struct IcuData([u8; 10284336]);
+        struct IcuData([u8; 10454784]);
         static ICU_DATA: IcuData = IcuData(*include_bytes!("../icudtl.dat"));
-        v8::icu::set_common_data_70(&ICU_DATA.0).unwrap();
+        v8::icu::set_common_data_71(&ICU_DATA.0).unwrap();
 
         match platform {
             None => v8::V8::initialize_platform(
@@ -163,27 +163,25 @@ impl JSRunner {
         v8::HandleScope::with_context(&mut self.isolate, context)
     }
 
-    pub fn log(self, message: &String) {
-        let state = JSRunner::get_state(&self.isolate);
+    pub fn log(scope: &v8::HandleScope, message: &str) {
+        let state = JSRunner::get_state(scope);
         let state = RefCell::borrow_mut(&state);
         let function: fn(*const u32, usize) = unsafe { std::mem::transmute(state.output) };
-        (function)(message.as_str() as *const str as *const u32, message.len());
+        (function)(message as *const str as *const u32, message.len());
     }
 }
 
-pub fn set_func(scope: &mut v8::HandleScope<'_>,
+pub fn set_func(logger: *const (),
+                scope: &mut v8::HandleScope<'_>,
                 obj: v8::Local<v8::Object>,
                 name: &str) {
     let key = v8::String::new(scope, name).unwrap();
     let val = v8::Function::builder_raw(
-        v8::MapFnTo::map_fn_to(testing)).build(scope).unwrap();
+        v8::MapFnTo::map_fn_to(|scope: &mut v8::HandleScope,
+                                args: v8::FunctionCallbackArguments,
+                                return_value: v8::ReturnValue| {
+            JSRunner::log(scope, "testing!");
+        })).build(scope).unwrap();
     val.set_name(key);
     obj.set(scope, key.into(), val.into());
-}
-
-fn testing(scope: &mut v8::HandleScope, args: v8::FunctionCallbackArguments, return_value: v8::ReturnValue) {
-    let state = JSRunner::get_state(&scope);
-    let state = RefCell::borrow_mut(&state);
-    let function: fn(*const u32, usize) = unsafe { std::mem::transmute(state.output) };
-    (function)("Testing" as *const str as *const u32, "Testing".len());
 }

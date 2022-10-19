@@ -2,10 +2,9 @@ use std::collections::HashMap;
 use std::slice;
 use anyhow::Error;
 
-#[repr(C, packed(1))]
 pub struct ExternalFunctions {
-    pub function: HashMap<String, *const u32>,
     pub objects: Vec<String>,
+    pub function: HashMap<String, *const ()>,
     pub path: String
 }
 
@@ -40,6 +39,7 @@ impl ExternalFunctions {
         return Ok(created);
     }
 }
+
 
 fn get_string(input: &[u16]) -> Result<String, Error> {
     return match String::from_utf16(input) {
