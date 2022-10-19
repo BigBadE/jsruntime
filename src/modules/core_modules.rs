@@ -14,7 +14,7 @@ pub fn command_module() -> Module {
 
 fn print(scope: &mut v8::HandleScope,
             args: v8::FunctionCallbackArguments,
-            return_value: v8::ReturnValue) {
+            _return_value: v8::ReturnValue) {
     if args.length() != 1 {
         let message = v8::String::new(scope, "Incorrect arguments".as_ref()).unwrap();
         let exception = v8::Exception::syntax_error(scope, message);
@@ -22,5 +22,6 @@ fn print(scope: &mut v8::HandleScope,
         return;
     }
 
-    JSRunner::log(scope, args.get(0).to_rust_string_lossy(scope).as_str())
+    let message = args.get(0).to_rust_string_lossy(scope);
+    JSRunner::log(&scope, message.as_str());
 }

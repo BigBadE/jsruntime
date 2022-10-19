@@ -4,9 +4,8 @@ use std::rc::Rc;
 use std::sync::Mutex;
 use anyhow::Error;
 use lazy_static::lazy_static;
-use v8::{ContextScope, FunctionCallback, HandleScope, Local, Object};
 use crate::{ExternalFunctions, log};
-use crate::modules::MODULES;
+use crate::modules::modules;
 use crate::state::JSRunnerState;
 
 lazy_static! {
@@ -43,7 +42,7 @@ impl JSRunner {
 
             let context_scope = &mut v8::ContextScope::new(scope, context);
 
-            let modules = MODULES;
+            let modules = modules();
 
             let objects = &externals.modules;
 
@@ -52,7 +51,7 @@ impl JSRunner {
                     continue;
                 }
 
-                for (name, callback) in module.functions {
+                /*for (name, callback) in module.functions {
                     if name.contains('.') {
                         let split = name.find('.').unwrap();
 
@@ -65,7 +64,7 @@ impl JSRunner {
 
                 for object_name in objects {
                     get_object(object_name.as_str(), context_scope, global);
-                }
+                }*/
             }
 
             global_context = v8::Global::new(context_scope, context);
@@ -163,7 +162,7 @@ impl JSRunner {
     }
 }
 
-pub fn get_object(name: &str, context_scope: &mut ContextScope<HandleScope>, global: Local<Object>) -> v8::Local<v8::Object> {
+/*pub fn get_object(name: &str, context_scope: &mut ContextScope<HandleScope>, global: Local<Object>) -> v8::Local<v8::Object> {
     let global_key = v8::String::new(context_scope, name).unwrap().into();
 
     return match global.get(context_scope, global_key) {
@@ -180,7 +179,7 @@ pub fn get_object(name: &str, context_scope: &mut ContextScope<HandleScope>, glo
             object
         }
     };
-}
+}*/
 
 pub fn set_func(scope: &mut v8::HandleScope<'_>,
                 obj: v8::Local<v8::Object>,
