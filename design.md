@@ -1,7 +1,7 @@
 Ideas for running lots of scripts
 
 1. Use unbound scripts/templates to fast load library
-modules
+MODULES
 
 2. Scripts are run in the same process but with different contexts,
 the process handles sending data to/from scripts that is put into shared memory,

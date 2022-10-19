@@ -4,7 +4,9 @@ use std::rc::Rc;
 use std::sync::Mutex;
 use anyhow::Error;
 use lazy_static::lazy_static;
+use v8::{ContextScope, FunctionCallback, HandleScope, Local, Object};
 use crate::{ExternalFunctions, log};
+use crate::modules::MODULES;
 use crate::state::JSRunnerState;
 
 lazy_static! {
@@ -12,7 +14,8 @@ lazy_static! {
 }
 
 pub struct JSRunner {
-    isolate: v8::OwnedIsolate
+    isolate: v8::OwnedIsolate,
+    external_functions: HashMap<String, *const ()>
 }
 
 impl JSRunner {
@@ -40,41 +43,29 @@ impl JSRunner {
 
             let context_scope = &mut v8::ContextScope::new(scope, context);
 
-            let functions = &externals.function;
-            let objects = &externals.objects;
+            let modules = MODULES;
 
-            let mut object_functions: HashMap<String, (String, *const ())> = HashMap::new();
+            let objects = &externals.modules;
 
-
-            for (name, pointer) in functions {
-                if name.contains('.') {
-                    let split = name.find('.').unwrap();
-                    object_functions.insert(name[0..split].to_string(), (name[split+1..].to_string(), *pointer));
-                } else {
-                    set_func(logger, context_scope, global, name.as_str())
-                }
-            }
-
-            for object_name in objects {
-                let global_key =
-                    v8::String::new(context_scope, object_name.as_str()).unwrap().into();
-
-                let object: v8::Local<v8::Object> = match global.get(context_scope, global_key) {
-                    Some(found) => {
-                        match found.try_into() {
-                            Ok(found) => found,
-                            Err(_error) => v8::Object::new(context_scope)
-                        }
-                    },
-                    None => v8::Object::new(context_scope)
-                };
-
-                for (func_name, _function) in object_functions.get(object_name.as_str()) {
-                    set_func(logger, context_scope, object, func_name);
+            for module in modules {
+                if !objects.contains(&module.name) {
+                    continue;
                 }
 
-                global.set(context_scope, global_key,
-                           object.into());
+                for (name, callback) in module.functions {
+                    if name.contains('.') {
+                        let split = name.find('.').unwrap();
+
+                        set_func(context_scope, get_object(&name[0..split], context_scope, global),
+                                 &name[split+1..], callback);
+                    } else {
+                        set_func(context_scope, global, name, callback)
+                    }
+                }
+
+                for object_name in objects {
+                    get_object(object_name.as_str(), context_scope, global);
+                }
             }
 
             global_context = v8::Global::new(context_scope, context);
@@ -86,7 +77,8 @@ impl JSRunner {
         })));
 
         return Ok(JSRunner {
-            isolate
+            isolate,
+            external_functions: externals.function.clone()
         });
     }
 
@@ -171,17 +163,31 @@ impl JSRunner {
     }
 }
 
-pub fn set_func(logger: *const (),
-                scope: &mut v8::HandleScope<'_>,
+pub fn get_object(name: &str, context_scope: &mut ContextScope<HandleScope>, global: Local<Object>) -> v8::Local<v8::Object> {
+    let global_key = v8::String::new(context_scope, name).unwrap().into();
+
+    return match global.get(context_scope, global_key) {
+        Some(found) => {
+            match found.try_into() {
+                Ok(found) => found,
+                Err(_error) => v8::Object::new(context_scope)
+            }
+        },
+        None => {
+            let object = v8::Object::new(context_scope);
+            global.set(context_scope, global_key.into(), object.into());
+
+            object
+        }
+    };
+}
+
+pub fn set_func(scope: &mut v8::HandleScope<'_>,
                 obj: v8::Local<v8::Object>,
-                name: &str) {
+                name: &'static str,
+                function: v8::FunctionCallback) {
     let key = v8::String::new(scope, name).unwrap();
-    let val = v8::Function::builder_raw(
-        v8::MapFnTo::map_fn_to(|scope: &mut v8::HandleScope,
-                                args: v8::FunctionCallbackArguments,
-                                return_value: v8::ReturnValue| {
-            JSRunner::log(scope, "testing!");
-        })).build(scope).unwrap();
+    let val = v8::Function::builder_raw(function).build(scope).unwrap();
     val.set_name(key);
     obj.set(scope, key.into(), val.into());
 }

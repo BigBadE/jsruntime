@@ -3,6 +3,7 @@
 mod jsrunner;
 mod state;
 mod externalfunctions;
+mod modules;
 
 use std::fs;
 use std::path::Path;
@@ -13,11 +14,11 @@ use crate::jsrunner::JSRunner;
 #[no_mangle]
 pub extern "C" fn serenity_run(function_keys: *const u16, function_values: *const *const (),
                                function_sizes: *const u16, functions_length: i32,
-                               objects: *const u16, object_sizes: *const u16, object_length: i32,
+                               modules: *const u16, module_sizes: *const u16, module_length: i32,
                                path: *const u16, path_length: i32, logger: *const ()) {
     let externals = match unsafe {
         ExternalFunctions::new(function_keys, function_values, function_sizes, functions_length,
-                               objects, object_sizes, object_length, path, path_length)
+                               modules, module_sizes, module_length, path, path_length)
     } {
         Ok(value) => value,
         Err(error) => {
