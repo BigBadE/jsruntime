@@ -2,15 +2,5 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/Rusty_v8" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/Rusty_v8/base/trace_event/common" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/Rusty_v8/build" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/Rusty_v8/buildtools" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/Rusty_v8/third_party/icu" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/Rusty_v8/third_party/jinja2" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/Rusty_v8/third_party/markupsafe" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/Rusty_v8/third_party/zlib" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/Rusty_v8/tools/clang" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/Rusty_v8/v8" vcs="Git" />
   </component>
 </project>
