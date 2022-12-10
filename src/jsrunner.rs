@@ -28,7 +28,6 @@ impl JSRunner {
             }
         }
 
-
         let mut isolate = v8::Isolate::new(params);
 
         let global_context;
